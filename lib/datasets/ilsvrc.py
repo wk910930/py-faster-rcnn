@@ -20,7 +20,7 @@ class ilsvrc(imdb):
         self._image_set = image_set
         self._devkit_path = self._get_default_path() if devkit_path is None \
                                          else devkit_path
-        self._data_path = os.path.join(self._devkit_path, 'ILSVRC')
+        self._data_path = os.path.join(self._devkit_path, 'ILSVRC' + self._year)
         self._classes = ('__background__',  # always index 0
                          'n02672831', 'n02691156', 'n02219486', 'n02419796', 'n07739125',
                          'n02454379', 'n07718747', 'n02764044', 'n02766320', 'n02769748',
@@ -71,7 +71,7 @@ class ilsvrc(imdb):
         self.config = {'cleanup' : True, 'use_salt' : True, 'top_k' : 2000}
 
         assert os.path.exists(self._devkit_path), \
-                'VOCdevkit path does not exist: {}'.format(self._devkit_path)
+                'ILSVRCdevkit path does not exist: {}'.format(self._devkit_path)
         assert os.path.exists(self._data_path), \
                 'Path does not exist: {}'.format(self._data_path)
 
@@ -79,29 +79,7 @@ class ilsvrc(imdb):
         """
         Return the default path where ILSVRC is expected to be installed.
         """
-        return os.path.join(cfg.DATA_DIR, 'ILSVRC')
-
-    def gt_roidb(self):
-        """
-        Return the database of ground-truth regions of interest.
-
-        This function loads/saves from/to a cache file to speed up future calls.
-        """
-        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
-        if os.path.exists(cache_file):
-            print 'cache_file: {}'.format(cache_file)
-            with open(cache_file, 'rb') as fid:
-                roidb = cPickle.load(fid)
-            print '{} gt roidb loaded from {}'.format(self.name, cache_file)
-            return roidb
-
-        gt_roidb = [self._load_ilsvrc_annotation(index)
-                    for index in self.image_index]
-        with open(cache_file, 'wb') as fid:
-            cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote gt roidb to {}'.format(cache_file)
-
-        return gt_roidb
+        return os.path.join(cfg.DATA_DIR, 'ILSVRCdevkit' + self._year)
 
     def _load_image_set_index(self):
         """
@@ -117,90 +95,28 @@ class ilsvrc(imdb):
             image_index = [x.strip() for x in f.readlines()]
         return image_index
 
-    def _load_ilsvrc_annotation(self, index):
-        """
-        Load image and bounding boxes info from XML file in the PASCAL VOC
-        format.
-        """
-        filename = os.path.join(self._data_path, 'Annotations', 'DET', index + '.xml')
-
-        def get_data_from_tag(node, tag):
-            return node.getElementsByTagName(tag)[0].childNodes[0].data
-
-        with open(filename) as f:
-            data = minidom.parseString(f.read())
-
-        objs = data.getElementsByTagName('object')
-        num_objs = len(objs)
-
-        boxes = np.zeros((num_objs, 4), dtype=np.uint16)
-        gt_classes = np.zeros((num_objs), dtype=np.int32)
-
-        overlaps = np.zeros((num_objs, 2), dtype=np.float32)
-
-        # Load object bounding boxes into a data frame.
-        for ix, obj in enumerate(objs):
-            # Make pixel indexes 0-based
-            x1 = float(get_data_from_tag(obj, 'xmin'))
-            y1 = float(get_data_from_tag(obj, 'ymin'))
-            x2 = float(get_data_from_tag(obj, 'xmax'))
-            y2 = float(get_data_from_tag(obj, 'ymax'))
-            cls = self._class_to_ind[str(get_data_from_tag(obj, 'name')).lower().strip()]
-            if cls > 0:
-                cls = 1
-            boxes[ix, :] = [x1, y1, x2, y2]
-            gt_classes[ix] = cls
-            overlaps[ix, cls] = 1.0
-
-        overlaps = scipy.sparse.csr_matrix(overlaps)
-
-        return {'boxes' : boxes,
-                'gt_classes': gt_classes,
-                'gt_overlaps' : overlaps,
-                'flipped' : False}
-
     def slide_roidb(self):
         """
-        Return the database of selective search regions of interest.
-        Ground-truth ROIs are also included.
-
+        Return the database of regions of interest.
         This function loads/saves from/to a cache file to speed up future calls.
         """
-        cache_file = os.path.join(self.cache_path,
-                                  self.name + '_rpn_roidb.pkl')
-
+        cache_file = os.path.join(self.cache_path, self.name + '_slide_roidb.pkl')
         if os.path.exists(cache_file):
             with open(cache_file, 'rb') as fid:
                 roidb = cPickle.load(fid)
             print '{} slide roidb loaded from {}'.format(self.name, cache_file)
             return roidb
-
-        if self._image_set != 'test' and self._image_set != 'val2':
-            gt_roidb = self.gt_roidb()
-            ss_roidb = self._load_slide_roidb()
-            roidb = imdb.merge_roidbs(ss_roidb, gt_roidb)
-        else:
-            roidb = self._load_slide_roidb()
+        roidb = self._load_slide_roidb()
         with open(cache_file, 'wb') as fid:
             cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
         print 'wrote slide roidb to {}'.format(cache_file)
-
         return roidb
 
     def _load_slide_roidb(self):
         box_list = []
-        filename = os.path.abspath(os.path.join(self.cache_path, '..', 'rpn_data', self.name + '.mat'))
+        filename = os.path.abspath(os.path.join(self.cache_path, '..', 'slide_data', self.name + '.mat'))
         assert os.path.exists(filename), 'Slide anchor data not found at: {}'.format(filename)
         raw_data = sio.loadmat(filename)['boxes'].ravel()
 
         for i in xrange(raw_data.shape[0]):
             box_list.append(raw_data[i][:, 0:4] - 1)
-
-    def default_roidb(self):
-        pass
-
-    def evaluate_detections(self, all_boxes, output_dir=None):
-        pass
-
-    def image_path_at(self, i):
-        pass
