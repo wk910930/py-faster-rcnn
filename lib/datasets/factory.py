@@ -31,6 +31,13 @@ for year in ['2015']:
         name = 'coco_{}_{}'.format(year, split)
         __sets[name] = (lambda split=split, year=year: coco(split, year))
 
+# Set up ilsvrc_2013_<split>
+for year in ['2013']:
+    for split in ['trainval', 'val1', 'val2', 'trainval_all','pos_1k5_box']:
+        name = 'ilsvrc_{}_{}'.format(year, split)
+        __sets[name] = (lambda split=split, year=year:
+                datasets.ilsvrc(split, year))
+
 def get_imdb(name):
     """Get an imdb (image database) by name."""
     if not __sets.has_key(name):
