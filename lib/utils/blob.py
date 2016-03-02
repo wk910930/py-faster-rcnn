@@ -28,6 +28,27 @@ def im_list_to_blob(ims):
     blob = blob.transpose(channel_swap)
     return blob
 
+def im_list_to_fixed_spatial_blob(ims, height, width):
+    """Convert a list of images into a network input with specific height and width.
+
+    Assumes images are already prepared (means subtracted, BGR order, ...).
+    """
+    num_images = len(ims)
+    blob = np.zeros((num_images, height, width, 3),
+                    dtype=np.float32)
+    for i in xrange(num_images):
+        im = ims[i]
+        assert height >= im.shape[0], \
+            'height({}) must be no less than im.height({})'.format(height, im.shape[0])
+        assert width >= im.shape[1], \
+            'width({}) must be no less than im.width({})'.format(width, im.shape[1])
+        blob[i, 0:im.shape[0], 0:im.shape[1], :] = im
+    # Move channels (axis 3) to axis 1
+    # Axis order will become: (batch elem, channel, height, width)
+    channel_swap = (0, 3, 1, 2)
+    blob = blob.transpose(channel_swap)
+    return blob
+
 def prep_im_for_blob(im, pixel_means, target_size, max_size):
     """Mean subtract and scale an image for use in a blob."""
     im = im.astype(np.float32, copy=False)
