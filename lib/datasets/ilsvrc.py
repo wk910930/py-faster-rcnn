@@ -66,7 +66,7 @@ class ilsvrc(imdb):
         self._image_ext = '.JPEG'
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
-        self._roidb_handler = self.slide_roidb()
+        self.set_proposal_method('slide')
         self._comp_id = 'comp4'
         self.config = {'cleanup' : True, 'use_salt' : True, 'top_k' : 2000}
 
@@ -74,6 +74,22 @@ class ilsvrc(imdb):
                 'ILSVRCdevkit path does not exist: {}'.format(self._devkit_path)
         assert os.path.exists(self._data_path), \
                 'Path does not exist: {}'.format(self._data_path)
+
+    def image_path_at(self, i):
+        """
+        Return the absolute path to image i in the image sequence.
+        """
+        return self.image_path_from_index(self._image_index[i])
+
+    def image_path_from_index(self, index):
+        """
+        Construct an image path from the image's "index" identifier.
+        """
+        image_path = os.path.join(self._data_path, 'Data', 'DET',
+                                  index + self._image_ext)
+        assert os.path.exists(image_path), \
+                'Path does not exist: {}'.format(image_path)
+        return image_path
 
     def _get_default_path(self):
         """
