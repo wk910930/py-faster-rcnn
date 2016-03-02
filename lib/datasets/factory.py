@@ -11,6 +11,7 @@ __sets = {}
 
 from datasets.pascal_voc import pascal_voc
 from datasets.coco import coco
+from datasets.ilsvrc import ilsvrc
 import numpy as np
 
 # Set up voc_<year>_<split> using selective search "fast" mode
@@ -35,8 +36,7 @@ for year in ['2015']:
 for year in ['2013']:
     for split in ['trainval', 'val1', 'val2', 'trainval_all','pos_1k5_box']:
         name = 'ilsvrc_{}_{}'.format(year, split)
-        __sets[name] = (lambda split=split, year=year:
-                datasets.ilsvrc(split, year))
+        __sets[name] = (lambda split=split, year=year: ilsvrc(split, year))
 
 def get_imdb(name):
     """Get an imdb (image database) by name."""
