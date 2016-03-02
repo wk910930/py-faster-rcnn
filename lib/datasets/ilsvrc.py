@@ -66,7 +66,7 @@ class ilsvrc(imdb):
         self._image_ext = '.JPEG'
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
-        self.set_proposal_method('slide')
+        self._roidb_handler = self.slide_roidb
         self._comp_id = 'comp4'
         self.config = {'cleanup' : True, 'use_salt' : True, 'top_k' : 2000}
 
@@ -122,13 +122,13 @@ class ilsvrc(imdb):
                 roidb = cPickle.load(fid)
             print '{} slide roidb loaded from {}'.format(self.name, cache_file)
             return roidb
-        roidb = self._load_slide_roidb()
+        roidb = self._load_slide_roidb(None)
         with open(cache_file, 'wb') as fid:
             cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
         print 'wrote slide roidb to {}'.format(cache_file)
         return roidb
 
-    def _load_slide_roidb(self):
+    def _load_slide_roidb(self, gt_roidb):
         box_list = []
         filename = os.path.abspath(os.path.join(self.cache_path, '..', 'slide_data', self.name + '.mat'))
         assert os.path.exists(filename), 'Slide anchor data not found at: {}'.format(filename)
@@ -136,3 +136,38 @@ class ilsvrc(imdb):
 
         for i in xrange(raw_data.shape[0]):
             box_list.append(raw_data[i][:, 0:4] - 1)
+
+        return self.create_roidb_from_box_list(box_list, gt_roidb)
+    
+    def evaluate_detections(self, all_boxes, output_dir):
+        comp_id = self._write_ilsvrc_results_file(all_boxes)
+
+    def _write_ilsvrc_results_file(self, all_boxes):
+        use_salt = self.config['use_salt']
+        comp_id = 'comp4'
+        if use_salt:
+            comp_id += '-{}'.format(os.getpid())
+
+        # VOCdevkit/results/VOC2007/Main/comp4-44503_det_test_aeroplane.txt
+        path = os.path.join(self._devkit_path, 'results', self._image_set,
+                            comp_id + '_')
+
+        filename = path + 'det_' + self._image_set + '.txt'
+        with open(filename, 'wt') as f:
+            for im_ind, index in enumerate(self.image_index):
+                for cls_ind, cls in enumerate(self.classes):
+                    if cls == '__background__':
+                        continue
+                    dets = all_boxes[cls_ind][im_ind]
+                    if dets == []:
+                        continue
+                    keep_inds = np.where(dets[:, -1]>=0.01)[0]
+                    dets = dets[keep_inds, :]
+                    # the VOCdevkit expects 1-based indices
+                    for k in xrange(dets.shape[0]):
+                        f.write('{:d} {:d} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
+                                format(im_ind+1, cls_ind, dets[k, -1],
+                                       dets[k, 0] + 1, dets[k, 1] + 1,
+                                       dets[k, 2] + 1, dets[k, 3] + 1))
+        return comp_id
+
