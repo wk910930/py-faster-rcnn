@@ -50,7 +50,7 @@ def _get_image_blob(im):
 
     # Create a blob to hold the input images
     #blob = im_list_to_blob(processed_ims)
-    blob = im_list_to_fixed_spatial_blob(processed_ims, 700, 700)
+    blob = im_list_to_fixed_spatial_blob(processed_ims, cfg.TEST.MAX_SIZE, cfg.TEST.MAX_SIZE)
 
     return blob, np.array(im_scale_factors)
 
