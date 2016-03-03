@@ -6,6 +6,7 @@
 
 import  os
 import cPickle
+import uuid
 import scipy.io as sio
 import numpy as np
 from datasets.imdb import imdb
@@ -66,6 +67,7 @@ class ilsvrc(imdb):
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
         self._roidb_handler = self.slide_roidb
+        self._salt = str(uuid.uuid4())
         self._comp_id = 'comp4'
         # ILSVRC specific config options
         self.config = {'cleanup' : True, 'use_salt' : True, 'top_k' : 2000}
@@ -141,6 +143,11 @@ class ilsvrc(imdb):
 
     def evaluate_detections(self, all_boxes, output_dir):
         self._write_ilsvrc_results_file(all_boxes)
+
+    def _get_comp_id(self):
+        comp_id = (self._comp_id + '_' + self._salt if self.config['use_salt']
+            else self._comp_id)
+        return comp_id
 
     def _get_ilsvrc_results_file_template(self):
         # ILSVRCdevkit2013/results/ILSVRC2013/Main/comp4-44503_det_test_aeroplane.txt
