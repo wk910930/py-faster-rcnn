@@ -142,21 +142,25 @@ class ilsvrc(imdb):
     def evaluate_detections(self, all_boxes, output_dir):
         self._write_ilsvrc_results_file(all_boxes)
 
+    def _get_ilsvrc_results_file_template(self):
+        # ILSVRCdevkit2013/results/ILSVRC2013/Main/comp4-44503_det_test_aeroplane.txt
+        filename = self._get_comp_id() + '_det_' + self._image_set + '_{:s}.txt'
+        path = os.path.join(
+            self._devkit_path,
+            'results',
+            'ILSVRC' + self._year,
+            'Main',
+            filename)
+        return path
+
     def _write_ilsvrc_results_file(self, all_boxes):
-        use_salt = self.config['use_salt']
-        comp_id = 'comp4'
-        if use_salt:
-            comp_id += '-{}'.format(os.getpid())
-
-        # ILSVRCdevkit2013/results/val2/comp4-44503_det_val2.txt
-        path = os.path.join(self._devkit_path, 'results', self._image_set, comp_id + '_')
-
-        filename = path + 'det_' + self._image_set + '.txt'
-        with open(filename, 'wt') as f:
-            for im_ind, index in enumerate(self.image_index):
-                for cls_ind, cls in enumerate(self.classes):
-                    if cls == '__background__':
-                        continue
+        for cls_ind, cls in enumerate(self.classes):
+            if cls == '__background__':
+                continue
+            print 'Writing {} ILSVRC results file'.format(cls)
+            filename = self._get_ilsvrc_results_file_template().format(cls)
+            with open(filename, 'wt') as f:
+                for im_ind, index in enumerate(self.image_index):
                     dets = all_boxes[cls_ind][im_ind]
                     if dets == []:
                         continue
