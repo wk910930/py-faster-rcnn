@@ -6,18 +6,16 @@
 
 """Test a Fast R-CNN network on an imdb (image database)."""
 
-from fast_rcnn.config import cfg, get_output_dir
-from fast_rcnn.bbox_transform import clip_boxes, bbox_transform_inv
-import argparse
-from utils.timer import Timer
-import numpy as np
-import cv2
-import caffe
-from fast_rcnn.nms_wrapper import nms
 import cPickle
 import heapq
-from utils.blob import im_list_to_fixed_spatial_blob
 import os
+import cv2
+import numpy as np
+from fast_rcnn.nms_wrapper import nms
+from fast_rcnn.config import cfg
+from fast_rcnn.config import get_output_dir
+from utils.blob import im_list_to_fixed_spatial_blob
+from utils.timer import Timer
 
 def _get_image_blob(im):
     """Converts an image into a network input.
@@ -256,6 +254,12 @@ def _clip_boxes(boxes, im_shape):
 def test_net(net, imdb):
     """Test a Fast R-CNN network on an image database."""
     num_images = len(imdb.image_index)
+    # all detections are collected into:
+    #    all_boxes[cls][image] = N x 5 array of detections in
+    #    (x1, y1, x2, y2, score)
+    all_boxes = [[[] for _ in xrange(num_images)]
+                 for _ in xrange(imdb.num_classes)]
+
     # heuristic: keep an average of 40 detections per class per images prior
     # to NMS
     max_per_set = 40 * num_images
@@ -267,11 +271,6 @@ def test_net(net, imdb):
     # top_scores will hold one minheap of scores per class (used to enforce
     # the max_per_set constraint)
     top_scores = [[] for _ in xrange(imdb.num_classes)]
-    # all detections are collected into:
-    #    all_boxes[cls][image] = N x 5 array of detections in
-    #    (x1, y1, x2, y2, score)
-    all_boxes = [[[] for _ in xrange(num_images)]
-                 for _ in xrange(imdb.num_classes)]
 
     output_dir = get_output_dir(imdb, net)
     if not os.path.exists(output_dir):
@@ -279,18 +278,17 @@ def test_net(net, imdb):
 
     # timers
     _t = {'im_detect' : Timer(), 'misc' : Timer()}
-    
+
     roidb = imdb.roidb
-    
+
     for i in xrange(num_images):
         im = cv2.imread(imdb.image_path_at(i))
         _t['im_detect'].tic()
         scores, boxes = im_detect(net, im, roidb[i]['boxes'])
         _t['im_detect'].toc()
 
-
         _t['misc'].tic()
-        #sio.savemat('output/rpn90/2+1_700_posbox8/val2_dets/%d.mat' % i, {'scores': scores, 'boxes': boxes})
+        # skip j = 0, because it's the background class
         for j in xrange(1, imdb.num_classes):
             inds = np.where((scores[:, j] > thresh[j]) &
                             (roidb[i]['gt_classes'] == 0))[0]
@@ -337,4 +335,3 @@ def test_net(net, imdb):
 
     print 'Evaluating detections'
     imdb.evaluate_detections(nms_dets, output_dir)
-
