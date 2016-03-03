@@ -6,7 +6,6 @@
 
 import  os
 import cPickle
-import scipy
 import scipy.io as sio
 import numpy as np
 from datasets.imdb import imdb
@@ -138,9 +137,9 @@ class ilsvrc(imdb):
             box_list.append(raw_data[i][:, 0:4] - 1)
 
         return self.create_roidb_from_box_list(box_list, gt_roidb)
-    
+
     def evaluate_detections(self, all_boxes, output_dir):
-        comp_id = self._write_ilsvrc_results_file(all_boxes)
+        self._write_ilsvrc_results_file(all_boxes)
 
     def _write_ilsvrc_results_file(self, all_boxes):
         use_salt = self.config['use_salt']
@@ -149,8 +148,7 @@ class ilsvrc(imdb):
             comp_id += '-{}'.format(os.getpid())
 
         # VOCdevkit/results/VOC2007/Main/comp4-44503_det_test_aeroplane.txt
-        path = os.path.join(self._devkit_path, 'results', self._image_set,
-                            comp_id + '_')
+        path = os.path.join(self._devkit_path, 'results', self._image_set, comp_id + '_')
 
         filename = path + 'det_' + self._image_set + '.txt'
         with open(filename, 'wt') as f:
@@ -161,7 +159,7 @@ class ilsvrc(imdb):
                     dets = all_boxes[cls_ind][im_ind]
                     if dets == []:
                         continue
-                    keep_inds = np.where(dets[:, -1]>=0.01)[0]
+                    keep_inds = np.where(dets[:, -1] >= 0.01)[0]
                     dets = dets[keep_inds, :]
                     # the VOCdevkit expects 1-based indices
                     for k in xrange(dets.shape[0]):
@@ -169,5 +167,3 @@ class ilsvrc(imdb):
                                 format(im_ind+1, cls_ind, dets[k, -1],
                                        dets[k, 0] + 1, dets[k, 1] + 1,
                                        dets[k, 2] + 1, dets[k, 3] + 1))
-        return comp_id
-
