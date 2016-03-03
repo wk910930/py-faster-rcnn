@@ -67,6 +67,7 @@ class ilsvrc(imdb):
         # Default to roidb handler
         self._roidb_handler = self.slide_roidb
         self._comp_id = 'comp4'
+        # ILSVRC specific config options
         self.config = {'cleanup' : True, 'use_salt' : True, 'top_k' : 2000}
 
         assert os.path.exists(self._devkit_path), \
@@ -101,7 +102,7 @@ class ilsvrc(imdb):
         Load the indexes listed in this dataset's image set file.
         """
         # Example path to image set file:
-        # self._devkit_path + /VOCdevkit2007/VOC2007/ImageSets/Main/val.txt
+        # self._devkit_path + /ILSVRCdevkit2013/ILSVRC2013/ImageSets/Main/val2.txt
         image_set_file = os.path.join(self._data_path, 'ImageSets', 'Main',
                                       self._image_set + '.txt')
         assert os.path.exists(image_set_file), \
@@ -147,7 +148,7 @@ class ilsvrc(imdb):
         if use_salt:
             comp_id += '-{}'.format(os.getpid())
 
-        # VOCdevkit/results/VOC2007/Main/comp4-44503_det_test_aeroplane.txt
+        # ILSVRCdevkit2013/results/val2/comp4-44503_det_val2.txt
         path = os.path.join(self._devkit_path, 'results', self._image_set, comp_id + '_')
 
         filename = path + 'det_' + self._image_set + '.txt'
@@ -161,9 +162,9 @@ class ilsvrc(imdb):
                         continue
                     keep_inds = np.where(dets[:, -1] >= 0.01)[0]
                     dets = dets[keep_inds, :]
-                    # the VOCdevkit expects 1-based indices
+                    # Expects 1-based indices
                     for k in xrange(dets.shape[0]):
                         f.write('{:d} {:d} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
-                                format(im_ind+1, cls_ind, dets[k, -1],
+                                format(im_ind + 1, cls_ind, dets[k, -1],
                                        dets[k, 0] + 1, dets[k, 1] + 1,
                                        dets[k, 2] + 1, dets[k, 3] + 1))
