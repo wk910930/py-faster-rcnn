@@ -2,9 +2,8 @@
 
 # --------------------------------------------------------
 # Fast R-CNN
-# Copyright (c) 2015 Microsoft
-# Licensed under The MIT License [see LICENSE for details]
-# Written by Ross Girshick
+# Copyright (c) 2016 Sensetime, CUHK
+# Written by Yang Bin, Wang Kun
 # --------------------------------------------------------
 
 """Test a Fast R-CNN network on an image database."""
