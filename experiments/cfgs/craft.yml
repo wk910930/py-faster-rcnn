@@ -1,0 +1,11 @@
+EXP_DIR: craft_ilsvrc
+TRAIN:
+  SCALES: !!python/tuple [600,]
+  MAX_SIZE: 700
+TEST:
+  SCALES: !!python/tuple [600,]
+  MAX_SIZE: 700
+  # Overlap threshold used for non-maximum suppression (suppress boxes with
+  # IoU >= this threshold)
+  NMS: 0.3
+  PROPOSAL_METHOD: 'slide'
