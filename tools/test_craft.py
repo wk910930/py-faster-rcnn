@@ -8,16 +8,18 @@
 
 """Test a Fast R-CNN network on an image database."""
 
+import argparse
+import pprint
+import time
+import os
+import sys
+import cPickle
+import numpy as np
 import _init_paths
+import caffe
 from fast_rcnn.craft import test_net
 from fast_rcnn.config import cfg, cfg_from_file
 from datasets.factory import get_imdb
-import caffe
-import argparse
-import pprint
-import time, os, sys
-import cPickle
-import numpy as np
 
 def parse_args():
     """
@@ -59,38 +61,37 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    print('Called with args:')
-    print(args)
+    print 'Called with args:'
+    print args
 
     if args.cfg_file is not None:
         cfg_from_file(args.cfg_file)
 
-    print('Using config:')
+    print 'Using config:'
     pprint.pprint(cfg)
 
     while not os.path.exists(args.caffemodel) and args.wait:
-        print('Waiting for {} to exist...'.format(args.caffemodel))
+        print 'Waiting for {} to exist...'.format(args.caffemodel)
         time.sleep(10)
 
     caffe.set_mode_gpu()
     caffe.set_device(args.gpu_id)
     net = caffe.Net(args.prototxt, args.caffemodel, caffe.TEST)
     net.name = os.path.splitext(os.path.basename(args.caffemodel))[0]
-    
+
     # apply bbox regression normalization on the net weights
     with open(args.bbox_mean, 'rb') as f:
         bbox_means = cPickle.load(f)
     with open(args.bbox_std, 'rb') as f:
         bbox_stds = cPickle.load(f)
-    #bbox_means = bbox_means[0:16]
-    #bbox_stds = bbox_stds[0:16]
 
-    net.params['bbox_pred'][0].data[...] = net.params['bbox_pred'][0].data * bbox_stds[:, np.newaxis]
-    net.params['bbox_pred'][1].data[...] = net.params['bbox_pred'][1].data * bbox_stds + bbox_means
+    net.params['bbox_pred'][0].data[...] = \
+        net.params['bbox_pred'][0].data * bbox_stds[:, np.newaxis]
 
+    net.params['bbox_pred'][1].data[...] = \
+        net.params['bbox_pred'][1].data * bbox_stds + bbox_means
 
     imdb = get_imdb(args.imdb_name)
     imdb.competition_mode(args.comp_mode)
-    
-    test_net(net, imdb)
 
+    test_net(net, imdb)
