@@ -1,6 +1,6 @@
 # --------------------------------------------------------
 # Fast R-CNN
-# Copyright (c) 2016 CUHK
+# Copyright (c) 2016 Sensetime, CUHK
 # Written by Yang Bin, Wang Kun
 # --------------------------------------------------------
 
@@ -146,7 +146,7 @@ class ilsvrc(imdb):
 
     def _get_comp_id(self):
         comp_id = (self._comp_id + '_' + self._salt if self.config['use_salt']
-            else self._comp_id)
+                   else self._comp_id)
         return comp_id
 
     def _get_ilsvrc_results_file_template(self):
