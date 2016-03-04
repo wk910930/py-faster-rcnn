@@ -144,30 +144,19 @@ class ilsvrc(imdb):
     def evaluate_detections(self, all_boxes, output_dir):
         self._write_ilsvrc_results_file(all_boxes)
 
-    def _get_comp_id(self):
-        comp_id = (self._comp_id + '_' + self._salt if self.config['use_salt']
-                   else self._comp_id)
-        return comp_id
-
-    def _get_ilsvrc_results_file_template(self):
-        # ILSVRCdevkit2013/results/ILSVRC2013/Main/comp4-44503_det_test_aeroplane.txt
-        filename = self._get_comp_id() + '_det_' + self._image_set + '_{:s}.txt'
-        path = os.path.join(
-            self._devkit_path,
-            'results',
-            'ILSVRC' + self._year,
-            'Main',
-            filename)
-        return path
-
     def _write_ilsvrc_results_file(self, all_boxes):
-        for cls_ind, cls in enumerate(self.classes):
-            if cls == '__background__':
-                continue
-            print 'Writing {} ILSVRC results file'.format(cls)
-            filename = self._get_ilsvrc_results_file_template().format(cls)
-            with open(filename, 'wt') as f:
-                for im_ind, index in enumerate(self.image_index):
+        use_salt = self.config['use_salt']
+        comp_id = 'comp4'
+        if use_salt:
+            comp_id += '-{}'.format(os.getpid())
+        # ILSVRCdevkit2013/results/val2/comp4-44503_det_val2.txt
+        path = os.path.join(self._devkit_path, 'results', self._image_set, comp_id + '_')
+        filename = path + 'det_' + self._image_set + '.txt'
+        with open(filename, 'wt') as f:
+            for im_ind, index in enumerate(self.image_index):
+                for cls_ind, cls in enumerate(self.classes):
+                    if cls == '__background__':
+                        continue
                     dets = all_boxes[cls_ind][im_ind]
                     if dets == []:
                         continue
@@ -179,28 +168,3 @@ class ilsvrc(imdb):
                                 format(im_ind + 1, cls_ind, dets[k, -1],
                                        dets[k, 0] + 1, dets[k, 1] + 1,
                                        dets[k, 2] + 1, dets[k, 3] + 1))
-
-    # def _write_ilsvrc_results_file(self, all_boxes):
-    #     use_salt = self.config['use_salt']
-    #     comp_id = 'comp4'
-    #     if use_salt:
-    #         comp_id += '-{}'.format(os.getpid())
-    #     # ILSVRCdevkit2013/results/val2/comp4-44503_det_val2.txt
-    #     path = os.path.join(self._devkit_path, 'results', self._image_set, comp_id + '_')
-    #     filename = path + 'det_' + self._image_set + '.txt'
-    #     with open(filename, 'wt') as f:
-    #         for im_ind, index in enumerate(self.image_index):
-    #             for cls_ind, cls in enumerate(self.classes):
-    #                 if cls == '__background__':
-    #                     continue
-    #                 dets = all_boxes[cls_ind][im_ind]
-    #                 if dets == []:
-    #                     continue
-    #                 keep_inds = np.where(dets[:, -1] >= 0.01)[0]
-    #                 dets = dets[keep_inds, :]
-    #                 # Expects 1-based indices
-    #                 for k in xrange(dets.shape[0]):
-    #                     f.write('{:d} {:d} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
-    #                             format(im_ind + 1, cls_ind, dets[k, -1],
-    #                                    dets[k, 0] + 1, dets[k, 1] + 1,
-    #                                    dets[k, 2] + 1, dets[k, 3] + 1))

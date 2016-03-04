@@ -138,7 +138,6 @@ def apply_nms(all_boxes, thresh):
                 continue
             # CPU NMS is much faster than GPU NMS when the number of boxes
             # is relative small (e.g., < 10k)
-            # TODO(rbg): autotune NMS dispatch
             keep = nms(dets, thresh, force_cpu=True)
             if len(keep) == 0:
                 continue
