@@ -1,3 +1,6 @@
 *.pyc
 .ipynb_checkpoints
 lib/build
+
+# OSX dir files
+.DS_Store
