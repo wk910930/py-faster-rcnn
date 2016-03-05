@@ -6,14 +6,11 @@
 
 """Test a Fast R-CNN network on an imdb (image database)."""
 
-import cPickle
 import heapq
-import os
 import cv2
 import numpy as np
 from fast_rcnn.nms_wrapper import nms
 from fast_rcnn.config import cfg
-from fast_rcnn.config import get_output_dir
 from utils.blob import im_list_to_fixed_spatial_blob
 from utils.timer import Timer
 
@@ -271,10 +268,6 @@ def test_net(net, imdb):
     # the max_per_set constraint)
     top_scores = [[] for _ in xrange(imdb.num_classes)]
 
-    output_dir = get_output_dir(imdb, net)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
     # timers
     _t = {'im_detect' : Timer(), 'misc' : Timer()}
 
@@ -325,12 +318,8 @@ def test_net(net, imdb):
             inds = np.where(all_boxes[j][i][:, -1] > thresh[j])[0]
             all_boxes[j][i] = all_boxes[j][i][inds, :]
 
-    det_file = os.path.join(output_dir, 'detections.pkl')
-    with open(det_file, 'wb') as f:
-        cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
-
     print 'Applying NMS to all detections'
     nms_dets = apply_nms(all_boxes, cfg.TEST.NMS)
 
-    print 'Evaluating detections'
-    imdb.evaluate_detections(nms_dets, output_dir)
+    print 'Write ilsvrc results to file'
+    imdb.write_ilsvrc_results_file(nms_dets)
