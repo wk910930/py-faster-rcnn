@@ -4,3 +4,8 @@ lib/build
 
 # OSX dir files
 .DS_Store
+
+# cython files
+lib/pycocotools/_mask.c
+lib/pycocotools/_mask.so
+
