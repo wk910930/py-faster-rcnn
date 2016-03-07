@@ -147,12 +147,12 @@ class coco(imdb):
 
         if self._image_set in self._gt_splits:
             gt_roidb = self.gt_roidb()
-            method_roidb = self._load_proposals(method, gt_roidb)
+            method_roidb = self.load_proposals(method, gt_roidb)
             roidb = imdb.merge_roidbs(gt_roidb, method_roidb)
             # Make sure we don't use proposals that are contained in crowds
             roidb = _filter_crowd_proposals(roidb, self.config['crowd_thresh'])
         else:
-            roidb = self._load_proposals(method, None)
+            roidb = self.load_proposals(method, None)
         with open(cache_file, 'wb') as fid:
             cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
         print 'wrote {:s} roidb to {:s}'.format(method, cache_file)
@@ -187,6 +187,44 @@ class coco(imdb):
                 self._get_box_file(index))
 
             raw_data = sio.loadmat(box_file)['boxes']
+            boxes = np.maximum(raw_data - 1, 0).astype(np.uint16)
+            if method == 'MCG':
+                # Boxes from the MCG website are in (y1, x1, y2, x2) order
+                boxes = boxes[:, (1, 0, 3, 2)]
+            # Remove duplicate boxes and very small boxes and then take top k
+            keep = ds_utils.unique_boxes(boxes)
+            boxes = boxes[keep, :]
+            keep = ds_utils.filter_small_boxes(boxes, self.config['min_size'])
+            boxes = boxes[keep, :]
+            boxes = boxes[:top_k, :]
+            box_list.append(boxes)
+            # Sanity check
+            im_ann = self._COCO.loadImgs(index)[0]
+            width = im_ann['width']
+            height = im_ann['height']
+            ds_utils.validate_boxes(boxes, width=width, height=height)
+        return self.create_roidb_from_box_list(box_list, gt_roidb)
+
+    def load_proposals(self, method, gt_roidb):
+        """
+        Modified from _load_proposals(self, method, gt_roidb).
+        """
+        box_list = []
+        top_k = self.config['top_k']
+        valid_methods = ['selective_search']
+        assert method in valid_methods
+
+        box_file = osp.join(
+            cfg.DATA_DIR, 'coco_proposals', method, 'mat',
+            self._image_set  + self._year + '.mat')
+        raw_datas = sio.loadmat(box_file)['boxes']
+        raw_datas = np.array(raw_datas)
+
+        print 'Loading {} boxes'.format(method)
+        for i, index in enumerate(self._image_index):
+            if i % 1000 == 0:
+                print '{:d} / {:d}'.format(i + 1, len(self._image_index))
+            raw_data = raw_datas[i, 0]
             boxes = np.maximum(raw_data - 1, 0).astype(np.uint16)
             if method == 'MCG':
                 # Boxes from the MCG website are in (y1, x1, y2, x2) order
