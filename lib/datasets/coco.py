@@ -184,7 +184,7 @@ class coco(imdb):
 
             box_file = osp.join(
                 cfg.DATA_DIR, 'coco_proposals', method, 'mat',
-                self._get_box_file(index))
+                self.get_box_file(index))
 
             raw_data = sio.loadmat(box_file)['boxes']
             boxes = np.maximum(raw_data - 1, 0).astype(np.uint16)
@@ -287,6 +287,10 @@ class coco(imdb):
         file_name = ('COCO_' + self._data_name +
                      '_' + str(index).zfill(12) + '.mat')
         return osp.join(file_name[:14], file_name[:22], file_name)
+    def get_box_file(self, index):
+        # COCO_val2014_000000447991.mat
+        file_name = str(index).zfill(12) + '.mat'
+        return file_name
 
     def _print_detection_eval_metrics(self, coco_eval):
         IoU_lo_thresh = 0.5
