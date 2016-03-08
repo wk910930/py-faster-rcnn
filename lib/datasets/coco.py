@@ -188,9 +188,8 @@ class coco(imdb):
 
             raw_data = sio.loadmat(box_file)['boxes']
             boxes = np.maximum(raw_data - 1, 0).astype(np.uint16)
-            if method == 'MCG':
-                # Boxes from the MCG website are in (y1, x1, y2, x2) order
-                boxes = boxes[:, (1, 0, 3, 2)]
+            # Notice: it assumes that boxes are in (y1, x1, y2, x2) order
+            boxes = boxes[:, (1, 0, 3, 2)]
             # Remove duplicate boxes and very small boxes and then take top k
             keep = ds_utils.unique_boxes(boxes)
             boxes = boxes[keep, :]
