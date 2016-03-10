@@ -32,7 +32,7 @@ with open('rois_coco_train_2014.txt', 'w') as f:
         # num_windows
         f.write('{}\n'.format(num_windows))
         for k in xrange(num_windows):
-            class_index = int(box['bbox_targets'][k, 0])
+            class_index = box['max_classes'][k]
             # class_index
             f.write('{} '.format(class_index))
             x1 = box['boxes'][k, 0]
