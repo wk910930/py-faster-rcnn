@@ -13,12 +13,12 @@ from datasets.coco import coco
 from roi_data_layer.roidb import prepare_roidb
 from roi_data_layer.roidb import add_bbox_regression_targets
 
-imdb = coco('train', '2014')
+imdb = coco('minival', '2014')
 prepare_roidb(imdb)
 roidb = imdb.roidb
 mean, std = add_bbox_regression_targets(roidb)
 
-with open('rois_coco_train_2014.txt', 'w') as f:
+with open('rois_coco_minival_2014.txt', 'w') as f:
     for image_index in xrange(len(roidb)):
         if image_index % 1000 == 0:
             print '{}/{}'.format(image_index, len(roidb))
@@ -31,17 +31,17 @@ with open('rois_coco_train_2014.txt', 'w') as f:
         num_windows = box['boxes'].shape[0]
         # num_windows
         f.write('{}\n'.format(num_windows))
+        class_index = box['max_classes']
+        overlap = box['max_overlaps']
         for k in xrange(num_windows):
-            class_index = box['max_classes'][k]
             # class_index
-            f.write('{} '.format(class_index))
+            f.write('{} '.format(class_index[k]))
             x1 = box['boxes'][k, 0]
             y1 = box['boxes'][k, 1]
             x2 = box['boxes'][k, 2]
             y2 = box['boxes'][k, 3]
             # overlap
-            overlap = box['max_overlaps'][k]
-            f.write('{0:.2f} '.format(overlap))
+            f.write('%.2f ' % overlap[k])
             # x1 y1 x2 y2
             f.write('{} {} {} {} '.format(x1, y1, x2, y2))
             dx = box['bbox_targets'][k, 1]
