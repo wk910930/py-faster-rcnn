@@ -18,7 +18,7 @@ import numpy as np
 import _init_paths
 import caffe
 from fast_rcnn.craft import test_net
-from fast_rcnn.config import cfg, cfg_from_file
+from fast_rcnn.config import cfg, cfg_from_file, cfg_from_list
 from datasets.factory import get_imdb
 
 def parse_args():
