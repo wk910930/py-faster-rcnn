@@ -94,46 +94,6 @@ def _project_im_rois(im_rois, scales):
 
     return rois, levels
 
-def vis_detections(im, class_name, dets, thresh=0.3):
-    """Visual debugging of detections."""
-    import matplotlib.pyplot as plt
-    im = im[:, :, (2, 1, 0)]
-    for i in xrange(np.minimum(10, dets.shape[0])):
-        bbox = dets[i, :4]
-        score = dets[i, -1]
-        if score > thresh:
-            plt.cla()
-            plt.imshow(im)
-            plt.gca().add_patch(
-                plt.Rectangle((bbox[0], bbox[1]),
-                              bbox[2] - bbox[0],
-                              bbox[3] - bbox[1], fill=False,
-                              edgecolor='g', linewidth=3)
-                )
-            plt.title('{}  {:.3f}'.format(class_name, score))
-            plt.show()
-
-def apply_nms(all_boxes, thresh):
-    """Apply non-maximum suppression to all predicted boxes output by the
-    test_net method.
-    """
-    num_classes = len(all_boxes)
-    num_images = len(all_boxes[0])
-    nms_boxes = [[[] for _ in xrange(num_images)]
-                 for _ in xrange(num_classes)]
-    for cls_ind in xrange(num_classes):
-        for im_ind in xrange(num_images):
-            dets = all_boxes[cls_ind][im_ind]
-            if dets == []:
-                continue
-            # CPU NMS is much faster than GPU NMS when the number of boxes
-            # is relative small (e.g., < 10k)
-            keep = nms(dets, thresh, force_cpu=True)
-            if len(keep) == 0:
-                continue
-            nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
-    return nms_boxes
-
 def _get_blobs(im, rois):
     """Convert an image and RoIs within that image into network inputs."""
     blobs = {'data' : None, 'rois' : None}
@@ -220,7 +180,48 @@ def im_detect(net, im, boxes=None):
 
     return scores, pred_boxes
 
-def test_net(net, imdb):
+def vis_detections(im, class_name, dets, thresh=0.3):
+    """Visual debugging of detections."""
+    import matplotlib.pyplot as plt
+    im = im[:, :, (2, 1, 0)]
+    for i in xrange(np.minimum(10, dets.shape[0])):
+        bbox = dets[i, :4]
+        score = dets[i, -1]
+        if score > thresh:
+            plt.cla()
+            plt.imshow(im)
+            plt.gca().add_patch(
+                plt.Rectangle((bbox[0], bbox[1]),
+                              bbox[2] - bbox[0],
+                              bbox[3] - bbox[1], fill=False,
+                              edgecolor='g', linewidth=3)
+                )
+            plt.title('{}  {:.3f}'.format(class_name, score))
+            plt.show()
+
+def apply_nms(all_boxes, thresh):
+    """Apply non-maximum suppression to all predicted boxes output by the
+    test_net method.
+    """
+    num_classes = len(all_boxes)
+    num_images = len(all_boxes[0])
+    nms_boxes = [[[] for _ in xrange(num_images)]
+                 for _ in xrange(num_classes)]
+    for cls_ind in xrange(num_classes):
+        for im_ind in xrange(num_images):
+            dets = all_boxes[cls_ind][im_ind]
+            if dets == []:
+                continue
+            # CPU NMS is much faster than GPU NMS when the number of boxes
+            # is relative small (e.g., < 10k)
+            # TODO(rbg): autotune NMS dispatch
+            keep = nms(dets, thresh, force_cpu=True)
+            if len(keep) == 0:
+                continue
+            nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
+    return nms_boxes
+
+def test_net(net, imdb, max_per_image=100):
     """Test a Fast R-CNN network on an image database."""
     num_images = len(imdb.image_index)
     # all detections are collected into:
@@ -232,8 +233,6 @@ def test_net(net, imdb):
     # heuristic: keep an average of 40 detections per class per images prior
     # to NMS
     max_per_set = 40 * num_images
-    # heuristic: keep at most 100 detection per class per image prior to NMS
-    max_per_image = 100
     # detection thresold for each class (this is adaptively set based on the
     # max_per_set constraint)
     thresh = -np.inf * np.ones(imdb.num_classes)
