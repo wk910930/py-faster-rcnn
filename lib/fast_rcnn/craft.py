@@ -230,6 +230,8 @@ def test_net(net, imdb, max_per_image=100, vis=False):
     all_boxes = [[[] for _ in xrange(num_images)]
                  for _ in xrange(imdb.num_classes)]
 
+    output_dir = get_output_dir(imdb, net)
+
     # heuristic: keep an average of 40 detections per class per images prior
     # to NMS
     max_per_set = 40 * num_images
@@ -293,5 +295,5 @@ def test_net(net, imdb, max_per_image=100, vis=False):
     print 'Applying NMS to all detections'
     nms_dets = apply_nms(all_boxes, cfg.TEST.NMS)
 
-    print 'Write ilsvrc results to file'
-    imdb.write_ilsvrc_results_file(nms_dets)
+    print 'Evaluating detections'
+    imdb.evaluate_detections(nms_dets, output_dir)

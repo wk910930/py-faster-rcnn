@@ -141,7 +141,7 @@ class ilsvrc(imdb):
 
         return self.create_roidb_from_box_list(box_list, gt_roidb)
 
-    def write_ilsvrc_results_file(self, all_boxes):
+    def _write_ilsvrc_results_file(self, all_boxes):
         use_salt = self.config['use_salt']
         comp_id = 'comp4'
         if use_salt:
@@ -165,3 +165,6 @@ class ilsvrc(imdb):
                                 format(im_ind + 1, cls_ind, dets[k, -1],
                                        dets[k, 0] + 1, dets[k, 1] + 1,
                                        dets[k, 2] + 1, dets[k, 3] + 1))
+
+    def evaluate_detections(self, all_boxes, output_dir):
+        self._write_ilsvrc_results_file(all_boxes)
