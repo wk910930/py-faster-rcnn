@@ -41,9 +41,17 @@ def parse_args():
                         default=True, type=bool)
     parser.add_argument('--imdb', dest='imdb_name',
                         help='dataset to test',
-                        default='voc_2007_test', type=str)
+                        default='ilsvrc_2013_val2', type=str)
     parser.add_argument('--comp', dest='comp_mode', help='competition mode',
                         action='store_true')
+    parser.add_argument('--set', dest='set_cfgs',
+                        help='set config keys', default=None,
+                        nargs=argparse.REMAINDER)
+    parser.add_argument('--vis', dest='vis', help='visualize detections',
+                        action='store_false')
+    parser.add_argument('--num_dets', dest='max_per_image',
+                        help='max number of detections per image',
+                        default=100, type=int)
     parser.add_argument('--bbox_mean', dest='bbox_mean',
                         help='the mean of bbox',
                         default=None, type=str)
@@ -66,6 +74,10 @@ if __name__ == '__main__':
 
     if args.cfg_file is not None:
         cfg_from_file(args.cfg_file)
+    if args.set_cfgs is not None:
+        cfg_from_list(args.set_cfgs)
+
+    cfg.GPU_ID = args.gpu_id
 
     print 'Using config:'
     pprint.pprint(cfg)
@@ -96,4 +108,4 @@ if __name__ == '__main__':
     if not cfg.TEST.HAS_RPN:
         imdb.set_proposal_method(cfg.TEST.PROPOSAL_METHOD)
 
-    test_net(net, imdb)
+    test_net(net, imdb, max_per_image=args.max_per_image, vis=args.vis)
