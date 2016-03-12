@@ -10,7 +10,7 @@ import heapq
 import cv2
 import numpy as np
 from fast_rcnn.nms_wrapper import nms
-from fast_rcnn.config import cfg
+from fast_rcnn.config import cfg, get_output_dir
 from fast_rcnn.bbox_transform import clip_boxes, bbox_transform_inv
 from utils.blob import im_list_to_fixed_spatial_blob
 from utils.timer import Timer
