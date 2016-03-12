@@ -8,6 +8,7 @@
 
 """Generate txt file as the input to craft::frcnn_train_data_layer"""
 
+import cPickle
 import _init_paths
 from datasets.coco import coco
 from roi_data_layer.roidb import prepare_roidb
@@ -17,6 +18,11 @@ imdb = coco('train', '2014')
 prepare_roidb(imdb)
 roidb = imdb.roidb
 mean, std = add_bbox_regression_targets(roidb)
+
+with open('bbox_means.pkl', 'wb') as fid1:
+    cPickle.dump(mean, fid1, cPickle.HIGHEST_PROTOCOL)
+with open('bbox_stds.pkl', 'wb') as fid2:
+    cPickle.dump(std, fid2, cPickle.HIGHEST_PROTOCOL)
 
 with open('rois_coco_train_2014.txt', 'w') as f:
     for image_index in xrange(len(roidb)):
