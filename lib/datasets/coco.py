@@ -73,6 +73,7 @@ class coco(imdb):
         self._view_map = {
             'minival2014' : 'val2014',          # 5k val2014 subset
             'valminusminival2014' : 'val2014',  # val2014 \setminus minival2014
+            'test-dev2015' : 'test2015'
         }
         coco_name = image_set + year  # e.g., "val2014"
         self._data_name = (self._view_map[coco_name]
