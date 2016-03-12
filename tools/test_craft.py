@@ -104,7 +104,7 @@ if __name__ == '__main__':
         net.params['bbox_pred'][1].data * bbox_stds + bbox_means
 
     imdb = get_imdb(args.imdb_name)
-    imdb.competition_mode(args.comp_mode)
+    imdb.competition_mode(True)
     if not cfg.TEST.HAS_RPN:
         imdb.set_proposal_method(cfg.TEST.PROPOSAL_METHOD)
 
