@@ -341,9 +341,14 @@ class coco(imdb):
     def _coco_results_one_category(self, boxes, cat_id):
         results = []
         for im_ind, index in enumerate(self.image_index):
-            dets = boxes[im_ind].astype(np.float)
+            dets = boxes[im_ind];
             if dets == []:
                 continue
+            dets = boxes[im_ind].astype(np.float)
+
+            keep_inds = np.where(dets[:, -1] >= 0.01)[0]
+            dets = dets[keep_inds, :]
+
             scores = dets[:, -1]
             xs = dets[:, 0]
             ys = dets[:, 1]
