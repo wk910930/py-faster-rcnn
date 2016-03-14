@@ -8,7 +8,6 @@ from datasets.imdb import imdb
 import datasets.ds_utils as ds_utils
 from fast_rcnn.config import cfg
 import os.path as osp
-import sys
 import os
 import numpy as np
 import scipy.sparse
@@ -341,7 +340,7 @@ class coco(imdb):
     def _coco_results_one_category(self, boxes, cat_id):
         results = []
         for im_ind, index in enumerate(self.image_index):
-            dets = boxes[im_ind];
+            dets = boxes[im_ind]
             if dets == []:
                 continue
             dets = boxes[im_ind].astype(np.float)
