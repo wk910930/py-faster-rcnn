@@ -64,7 +64,7 @@ class coco(imdb):
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
         self.set_proposal_method('selective_search')
-        self.competition_mode(True)
+        self.competition_mode(False)
 
         # Some image sets are "views" (i.e. subsets) into others.
         # For example, minival2014 is a random 5000 image subset of val2014.
