@@ -14,18 +14,21 @@ from datasets.coco import coco
 from roi_data_layer.roidb import prepare_roidb
 from roi_data_layer.roidb import add_bbox_regression_targets
 
-image_set = 'val'
+image_set = 'train'
 year = '2014'
 
 imdb = coco(image_set, year)
 imdb.set_proposal_method('mcg')
 prepare_roidb(imdb)
 roidb = imdb.roidb
+gt_roidb = imdb.gt_roidb()
 
 # filter roidb
+print 'filtering out images with no gt...'
+assert len(roidb) == len(gt_roidb)
 remove_indices = []
-for i in xrange(len(roidb)):
-    if roidb[i]['boxes'].shape[0] == 0:
+for i in xrange(len(gt_roidb)):
+    if gt_roidb[i]['boxes'].shape[0] == 0:
         remove_indices.append(i)
 roidb = [i for j, i in enumerate(roidb) if j not in remove_indices]
 print '{} images are filtered'.format(len(remove_indices))
