@@ -33,6 +33,9 @@ for i in xrange(len(gt_roidb)):
 roidb = [i for j, i in enumerate(roidb) if j not in remove_indices]
 print '{} images are filtered'.format(len(remove_indices))
 
+# Notice: roidb is list, you can concate two roidbs just by '+'.
+# e.g. roidb = roidb_train + roidb_val
+
 mean, std = add_bbox_regression_targets(roidb)
 
 with open('bbox_means.pkl', 'wb') as fid1:
