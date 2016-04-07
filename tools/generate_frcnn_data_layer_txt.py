@@ -16,9 +16,10 @@ from roi_data_layer.roidb import add_bbox_regression_targets
 
 image_set = 'train'
 year = '2014'
+proposal_method = 'mcg'
 
 imdb = coco(image_set, year)
-imdb.set_proposal_method('mcg')
+imdb.set_proposal_method(proposal_method)
 prepare_roidb(imdb)
 roidb = imdb.roidb
 gt_roidb = imdb.gt_roidb()
