@@ -52,10 +52,10 @@ def _conv2list(dets, thresh=0.5):
     inds = np.where(dets[:, -1] >= thresh)[0]
     for i in inds:
         bbox = dets[i, :4]
-        x1 = bbox[0]
-        y1 = bbox[1]
-        x2 = bbox[2]
-        y2 = bbox[3]
+        x1 = round(bbox[0])
+        y1 = round(bbox[1])
+        x2 = round(bbox[2])
+        y2 = round(bbox[3])
         boxes.append([x1, y1, x2, y2])
     return boxes
 
@@ -128,11 +128,26 @@ def imdb_proposals(net, imdb):
             # from IPython import embed; embed()
             _vis_proposals(im, dets[:3, :], thresh=0.9)
             plt.show()
-        if 1:
-            dets = np.hstack((imdb_boxes[i], scores))
-            file_name = os.path.splitext(os.path.basename(imdb.image_path_at(i)))[0]
-            boxes = np.array(_conv2list(dets[:3, :]))
-            print boxes.shape
-            sio.savemat(file_name, {'boxes': boxes})
+
+    return imdb_boxes
+
+def imdb_proposals_to_mat(net, imdb, output_dir):
+    """Generate RPN proposals on all images in an imdb."""
+
+    _t = Timer()
+    imdb_boxes = [[] for _ in xrange(imdb.num_images)]
+    for i in xrange(imdb.num_images):
+        im = cv2.imread(imdb.image_path_at(i))
+        _t.tic()
+        imdb_boxes[i], scores = im_proposals(net, im)
+        _t.toc()
+
+        dets = np.hstack((imdb_boxes[i], scores))
+        file_name = os.path.splitext(os.path.basename(imdb.image_path_at(i)))[0]
+        boxes = np.array(_conv2list(dets))
+        sio.savemat(output_dir + '/' + file_name, {'boxes': boxes})
+
+        print 'im_proposals: {:d}/{:d} {:d} {:.3f}s' \
+              .format(i + 1, imdb.num_images, boxes.shape[0], _t.average_time)
 
     return imdb_boxes

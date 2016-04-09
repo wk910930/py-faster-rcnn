@@ -14,6 +14,7 @@ import numpy as np
 from fast_rcnn.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from datasets.factory import get_imdb
 from rpn.generate import imdb_proposals
+from rpn.generate import imdb_proposals_to_mat
 import cPickle
 import caffe
 import argparse
@@ -38,6 +39,9 @@ def parse_args():
     parser.add_argument('--wait', dest='wait',
                         help='wait until net file exists',
                         default=True, type=bool)
+    parser.add_argument('--mat', dest='mat',
+                        help='write proposals to mat files',
+                        default=False, type=bool)
     parser.add_argument('--imdb', dest='imdb_name',
                         help='dataset to test',
                         default='voc_2007_test', type=str)
@@ -82,7 +86,13 @@ if __name__ == '__main__':
     net.name = os.path.splitext(os.path.basename(args.caffemodel))[0]
 
     imdb = get_imdb(args.imdb_name)
-    imdb_boxes = imdb_proposals(net, imdb)
+    if args.mat:
+        mat_output_dir = args.imdb_name + '_mat'
+        if not os.path.isdir(mat_output_dir):
+            os.mkdir(mat_output_dir)
+        imdb_boxes = imdb_proposals_to_mat(net, imdb, mat_output_dir)
+    else:
+        imdb_boxes = imdb_proposals(net, imdb)
 
     output_dir = get_output_dir(imdb, net)
     rpn_file = os.path.join(output_dir, net.name + '_rpn_proposals.pkl')
