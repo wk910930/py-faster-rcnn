@@ -9,6 +9,9 @@ from fast_rcnn.config import cfg
 from utils.blob import im_list_to_blob
 from utils.timer import Timer
 import numpy as np
+import matplotlib.pyplot as plt
+import scipy.io as sio
+import os
 import cv2
 
 def _vis_proposals(im, dets, thresh=0.5):
@@ -43,6 +46,18 @@ def _vis_proposals(im, dets, thresh=0.5):
     plt.axis('off')
     plt.tight_layout()
     plt.draw()
+
+def _conv2list(dets, thresh=0.5):
+    boxes = []
+    inds = np.where(dets[:, -1] >= thresh)[0]
+    for i in inds:
+        bbox = dets[i, :4]
+        x1 = bbox[0]
+        y1 = bbox[1]
+        x2 = bbox[2]
+        y2 = bbox[3]
+        boxes.append([x1, y1, x2, y2])
+    return boxes
 
 def _get_image_blob(im):
     """Converts an image into a network input.
@@ -113,5 +128,11 @@ def imdb_proposals(net, imdb):
             # from IPython import embed; embed()
             _vis_proposals(im, dets[:3, :], thresh=0.9)
             plt.show()
+        if 1:
+            dets = np.hstack((imdb_boxes[i], scores))
+            file_name = os.path.splitext(os.path.basename(imdb.image_path_at(i)))[0]
+            boxes = np.array(_conv2list(dets[:3, :]))
+            print boxes.shape
+            sio.savemat(file_name, {'boxes': boxes})
 
     return imdb_boxes
