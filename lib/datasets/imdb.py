@@ -172,6 +172,7 @@ class imdb(object):
             overlaps = bbox_overlaps(boxes.astype(np.float),
                                      gt_boxes.astype(np.float))
 
+            assert(boxes.shape[0] < gt_boxes.shape[0])
             _gt_overlaps = np.zeros((gt_boxes.shape[0]))
             for j in xrange(gt_boxes.shape[0]):
                 # find which proposal box maximally covers each gt box
