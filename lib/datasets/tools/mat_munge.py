@@ -1,13 +1,7 @@
 import os
 import sys
 
-"""Hacky tool to convert file system layout of MCG boxes downloaded from
-http://www.eecs.berkeley.edu/Research/Projects/CS/vision/grouping/mcg/
-so that it's consistent with those computed by Jan Hosang (see:
-http://www.mpi-inf.mpg.de/departments/computer-vision-and-multimodal-
-  computing/research/object-recognition-and-scene-understanding/how-
-  good-are-detection-proposals-really/)
-
+"""
 NB: Boxes from the MCG website are in (y1, x1, y2, x2) order.
 Boxes from Hosang et al. are in (x1, y1, x2, y2) order.
 """
@@ -23,7 +17,7 @@ def munge(src_dir):
         # COCO_val2014_0/COCO_val2014_000000447/COCO_val2014_000000447991.mat
         first = base[:14]
         second = base[:22]
-        dst_dir = os.path.join('MCG', 'mat', first, second)
+        dst_dir = os.path.join('mat', first, second)
         if not os.path.exists(dst_dir):
             os.makedirs(dst_dir)
         src = os.path.join(src_dir, fn)
