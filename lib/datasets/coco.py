@@ -129,6 +129,9 @@ class coco(imdb):
     def mcg_roidb(self):
         return self._roidb_from_proposals('MCG')
 
+    def custome_roidb(self):
+        return self._roidb_from_proposals('custome')
+
     def _roidb_from_proposals(self, method):
         """
         Creates a roidb from pre-computed proposals of a particular methods.
@@ -175,7 +178,7 @@ class coco(imdb):
             'selective_search',
             'edge_boxes_AR',
             'edge_boxes_70',
-            'default']
+            'custome']
         assert method in valid_methods
 
         print 'Loading {} boxes'.format(method)
