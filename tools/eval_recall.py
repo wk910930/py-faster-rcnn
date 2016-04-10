@@ -46,15 +46,16 @@ if __name__ == '__main__':
         raw_data = sio.loadmat(filename)['aboxes'].ravel()
         candidate_boxes = raw_data
 
-    ar, gt_overlaps, recalls, thresholds = \
-        imdb.evaluate_recall(candidate_boxes=candidate_boxes)
+    # ar, gt_overlaps, recalls, thresholds = \
+    #     imdb.evaluate_recall(candidate_boxes=candidate_boxes)
+    res = imdb.evaluate_recall(candidate_boxes=candidate_boxes)
     print 'Method: {}'.format(args.method)
-    print 'AverageRec: {:.3f}'.format(ar)
+    print 'AverageRec: {:.3f}'.format(res['ar'])
 
     def recall_at(t):
-        ind = np.where(thresholds > t - 1e-5)[0][0]
-        assert np.isclose(thresholds[ind], t)
-        return recalls[ind]
+        ind = np.where(res['thresholds'] > t - 1e-5)[0][0]
+        assert np.isclose(res['thresholds'][ind], t)
+        return res['recalls'][ind]
 
     print 'Recall@0.5: {:.3f}'.format(recall_at(0.5))
     print 'Recall@0.6: {:.3f}'.format(recall_at(0.6))
@@ -62,7 +63,7 @@ if __name__ == '__main__':
     print 'Recall@0.8: {:.3f}'.format(recall_at(0.8))
     print 'Recall@0.9: {:.3f}'.format(recall_at(0.9))
     # print again for easy spreadsheet copying
-    print '{:.3f}'.format(ar)
+    print '{:.3f}'.format(res['ar'])
     print '{:.3f}'.format(recall_at(0.5))
     print '{:.3f}'.format(recall_at(0.6))
     print '{:.3f}'.format(recall_at(0.7))
