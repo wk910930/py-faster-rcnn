@@ -174,7 +174,8 @@ class coco(imdb):
             'MCG',
             'selective_search',
             'edge_boxes_AR',
-            'edge_boxes_70']
+            'edge_boxes_70',
+            'default']
         assert method in valid_methods
 
         print 'Loading {} boxes'.format(method)
