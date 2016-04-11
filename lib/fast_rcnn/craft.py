@@ -284,13 +284,13 @@ def test_net(net, imdb, max_per_image=100, vis=False):
                     heapq.heappop(top_scores[j])
                 thresh[j] = top_scores[j][0]
 
-            all_boxes[j][i] = \
-                    np.hstack((cls_boxes, cls_scores[:, np.newaxis])) \
-                    .astype(np.float32, copy=False)
+            cls_dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])) \
+                .astype(np.float32, copy=False)
 
             if vis:
-                keep = nms(all_boxes[j][i], 0.3)
-                vis_detections(im, imdb.classes[j], all_boxes[j][i][keep, :])
+                keep = nms(cls_dets, cfg.TEST.NMS)
+                vis_detections(im, imdb.classes[j], cls_dets[keep, :])
+            all_boxes[j][i] = cls_dets
 
         _t['misc'].toc()
 
