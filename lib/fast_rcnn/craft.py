@@ -286,7 +286,8 @@ def test_net(net, imdb, max_per_image=100, vis=False):
 
             cls_dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])) \
                 .astype(np.float32, copy=False)
-
+            keep = nms(cls_dets, cfg.TEST.NMS)
+            cls_dets = cls_dets[keep, :]
             if vis:
                 keep = nms(cls_dets, cfg.TEST.NMS)
                 vis_detections(im, imdb.classes[j], cls_dets[keep, :])
@@ -303,8 +304,5 @@ def test_net(net, imdb, max_per_image=100, vis=False):
             inds = np.where(all_boxes[j][i][:, -1] > thresh[j])[0]
             all_boxes[j][i] = all_boxes[j][i][inds, :]
 
-    print 'Applying NMS to all detections'
-    nms_dets = apply_nms(all_boxes, cfg.TEST.NMS)
-
     print 'Evaluating detections'
-    imdb.evaluate_detections(nms_dets, output_dir)
+    imdb.evaluate_detections(all_boxes, output_dir)
