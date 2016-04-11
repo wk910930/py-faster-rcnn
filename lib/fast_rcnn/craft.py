@@ -289,8 +289,7 @@ def test_net(net, imdb, max_per_image=100, vis=False):
             keep = nms(cls_dets, cfg.TEST.NMS)
             cls_dets = cls_dets[keep, :]
             if vis:
-                keep = nms(cls_dets, cfg.TEST.NMS)
-                vis_detections(im, imdb.classes[j], cls_dets[keep, :])
+                vis_detections(im, imdb.classes[j], cls_dets)
             all_boxes[j][i] = cls_dets
 
         _t['misc'].toc()
