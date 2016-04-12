@@ -1,6 +1,3 @@
-TRAIN:
-  SCALES: !!python/tuple [600,]
-  MAX_SIZE: 700
 TEST:
   SCALES: !!python/tuple [600,]
   MAX_SIZE: 700
