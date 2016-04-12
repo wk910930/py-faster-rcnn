@@ -47,7 +47,7 @@ def _vis_proposals(im, dets, thresh=0.5):
     plt.tight_layout()
     plt.draw()
 
-def _conv2list(dets, thresh=0.5):
+def _conv2list(dets, thresh=0):
     boxes = []
     inds = np.where(dets[:, -1] >= thresh)[0]
     for i in inds:
