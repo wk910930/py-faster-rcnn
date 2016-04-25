@@ -52,6 +52,9 @@ def parse_args():
     parser.add_argument('--num_dets', dest='max_per_image',
                         help='max number of detections per image',
                         default=100, type=int)
+    parser.add_argument('--num_per_batch', dest='boxes_num_per_batch',
+                        help='split boxes to batches',
+                        default=0, type=int)
     parser.add_argument('--bbox_mean', dest='bbox_mean',
                         help='the mean of bbox',
                         default=None, type=str)
@@ -108,4 +111,4 @@ if __name__ == '__main__':
     if not cfg.TEST.HAS_RPN:
         imdb.set_proposal_method(cfg.TEST.PROPOSAL_METHOD)
 
-    test_net(net, imdb, max_per_image=args.max_per_image, vis=False)
+    test_net(net, imdb, max_per_image=args.max_per_image, boxes_num_per_batch=args.boxes_num_per_batch, vis=False)

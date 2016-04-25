@@ -222,7 +222,7 @@ def apply_nms(all_boxes, thresh):
             nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
     return nms_boxes
 
-def test_net(net, imdb, max_per_image=100, vis=False):
+def test_net(net, imdb, max_per_image=100, boxes_num_per_batch=0, vis=False):
     """Test a Fast R-CNN network on an image database."""
     num_images = len(imdb.image_index)
     # all detections are collected into:
@@ -249,8 +249,6 @@ def test_net(net, imdb, max_per_image=100, vis=False):
     if not cfg.TEST.HAS_RPN:
         roidb = imdb.roidb
 
-    boxes_num_per_batch = 400.0
-
     for i in xrange(num_images):
         # filter out any ground truth boxes
         if cfg.TEST.HAS_RPN:
@@ -264,22 +262,24 @@ def test_net(net, imdb, max_per_image=100, vis=False):
             box_proposals = roidb[i]['boxes'][roidb[i]['gt_classes'] == 0]
 
         im = cv2.imread(imdb.image_path_at(i))
-        num_boxes = roidb[i]['boxes'].shape[0]
-        num_batch = math.ceil(num_boxes/boxes_num_per_batch)
-        scores_batch = np.zeros((num_batch*boxes_num_per_batch,imdb.num_classes),dtype=np.float32)
-        boxes_batch = np.zeros((num_batch*boxes_num_per_batch,4*imdb.num_classes),dtype=np.float32)
-        rois = np.tile(roidb[i]['boxes'][0,:],(num_batch*boxes_num_per_batch,1))
-        rois[:num_boxes,:] = roidb[i]['boxes']
-
         _t['im_detect'].tic()
-        for j in xrange(int(num_batch)):
-            roi = rois[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch,:]
-            score, box = im_detect(net, im, roi)
-            scores_batch[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch,:] = score
-            boxes_batch[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch,:] = box
-        scores = scores_batch[:num_boxes,:]
-        boxes = boxes_batch[:num_boxes,:]
-        # scores, boxes = im_detect(net, im, box_proposals)
+        if boxes_num_per_batch != 0:
+            boxes_num_per_batch = float(boxes_num_per_batch)
+            num_boxes = roidb[i]['boxes'].shape[0]
+            num_batch = math.ceil(num_boxes/boxes_num_per_batch)
+            scores_batch = np.zeros((num_batch*boxes_num_per_batch,imdb.num_classes),dtype=np.float32)
+            boxes_batch = np.zeros((num_batch*boxes_num_per_batch,4*imdb.num_classes),dtype=np.float32)
+            rois = np.tile(roidb[i]['boxes'][0,:],(num_batch*boxes_num_per_batch,1))
+            rois[:num_boxes,:] = roidb[i]['boxes']
+            for j in xrange(int(num_batch)):
+                roi = rois[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch,:]
+                score, box = im_detect(net, im, roi)
+                scores_batch[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch,:] = score
+                boxes_batch[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch,:] = box
+            scores = scores_batch[:num_boxes,:]
+            boxes = boxes_batch[:num_boxes,:]
+        else:
+            scores, boxes = im_detect(net, im, box_proposals)
         _t['im_detect'].toc()
 
         _t['misc'].tic()
