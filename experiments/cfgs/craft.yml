@@ -1,6 +1,6 @@
 TEST:
   SCALES: !!python/tuple [600,]
-  MAX_SIZE: 700
+  MAX_SIZE: 900
   # Overlap threshold used for non-maximum suppression (suppress boxes with
   # IoU >= this threshold)
   NMS: 0.3
