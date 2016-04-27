@@ -6,6 +6,7 @@ TEST:
   RPN_MIN_SIZE: 32
   NMS: 0.3
 
+USE_GPU_NMS: False
 EXP_DIR: sensenets
 # The mapping from image coordinates to feature map coordinates might cause
 # some boxes that are distinct in image space to become identical in feature
