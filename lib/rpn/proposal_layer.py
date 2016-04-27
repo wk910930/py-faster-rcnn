@@ -30,7 +30,6 @@ class ProposalLayer(caffe.Layer):
         anchor_ratios = layer_params.get('ratios', (0.5, 1, 2))
         anchor_scales = layer_params.get('scales', (8, 16, 32))
         self._anchors = generate_anchors(base_size=anchor_base_size, ratios=np.array(anchor_ratios), scales=np.array(anchor_scales))
-        print self._anchors
         self._num_anchors = self._anchors.shape[0]
 
         if DEBUG:
