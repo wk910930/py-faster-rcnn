@@ -15,6 +15,7 @@ def im_list_to_blob(ims):
 
     Assumes images are already prepared (means subtracted, BGR order, ...).
     """
+    # find the max height and max width, which may not come from the same image, from ims
     max_shape = np.array([im.shape for im in ims]).max(axis=0)
     num_images = len(ims)
     blob = np.zeros((num_images, max_shape[0], max_shape[1], 3),
