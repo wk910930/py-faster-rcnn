@@ -16,6 +16,11 @@ class ilsvrc(imdb):
     """ ILSVRC """
     def __init__(self, image_set, year, devkit_path=None):
         imdb.__init__(self, 'ilsvrc_' + year + '_' + image_set)
+        # ILSVRC specific config options
+        self.config = {'top_k' : 2000,
+                       'use_salt' : True,
+                       'cleanup' : True}
+        # name, paths
         self._year = year
         self._image_set = image_set
         self._devkit_path = self._get_default_path() if devkit_path is None \
@@ -63,14 +68,14 @@ class ilsvrc(imdb):
                          'n04517823', 'n04536866', 'n04540053', 'n04542943', 'n04554684',
                          'n04557648', 'n04530566', 'n02062744', 'n04591713', 'n02391049')
         self._class_to_ind = dict(zip(self.classes, xrange(self.num_classes)))
-        self._image_ext = '.JPEG'
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
         self._roidb_handler = self.slide_roidb
         self._salt = str(uuid.uuid4())
-        self._comp_id = 'comp4'
-        # ILSVRC specific config options
-        self.config = {'cleanup' : True, 'use_salt' : True, 'top_k' : 2000}
+        self.competition_mode(False)
+        # Dataset splits that have ground-truth annotations (test splits
+        # do not have gt annotations)
+        self._gt_splits = ('trainval', 'val1', 'val2')
 
         assert os.path.exists(self._devkit_path), \
                 'ILSVRCdevkit path does not exist: {}'.format(self._devkit_path)
@@ -88,7 +93,7 @@ class ilsvrc(imdb):
         Construct an image path from the image's "index" identifier.
         """
         image_path = os.path.join(self._data_path, 'Data', 'DET',
-                                  index + self._image_ext)
+                                  index + '.JPEG')
         assert os.path.exists(image_path), \
                 'Path does not exist: {}'.format(image_path)
         return image_path
@@ -141,15 +146,8 @@ class ilsvrc(imdb):
 
         return self.create_roidb_from_box_list(box_list, gt_roidb)
 
-    def _write_ilsvrc_results_file(self, all_boxes):
-        use_salt = self.config['use_salt']
-        comp_id = 'comp4'
-        if use_salt:
-            comp_id += '-{}'.format(os.getpid())
-        # ILSVRCdevkit2013/results/val2/comp4-44503_det_val2.txt
-        path = os.path.join(self._devkit_path, 'results', self._image_set, comp_id + '_')
-        filename = path + 'det_' + self._image_set + '.txt'
-        with open(filename, 'wt') as f:
+    def _write_ilsvrc_results_file(self, all_boxes, res_file):
+        with open(res_file, 'wt') as f:
             for im_ind, index in enumerate(self.image_index):
                 for cls_ind, cls in enumerate(self.classes):
                     if cls == '__background__':
@@ -167,4 +165,22 @@ class ilsvrc(imdb):
                                        dets[k, 2] + 1, dets[k, 3] + 1))
 
     def evaluate_detections(self, all_boxes, output_dir):
-        self._write_ilsvrc_results_file(all_boxes)
+        res_file = os.path.join(output_dir, ('detections_' +
+                                         self._image_set +
+                                         self._year +
+                                         '_results'))
+        if self.config['use_salt']:
+            res_file += '_{}'.format(str(uuid.uuid4()))
+        res_file += '.txt'
+        self._write_ilsvrc_results_file(all_boxes, res_file)
+        # Optionally cleanup results txt file
+        if self.config['cleanup']:
+            os.remove(res_file)
+
+    def competition_mode(self, on):
+        if on:
+            self.config['use_salt'] = False
+            self.config['cleanup'] = False
+        else:
+            self.config['use_salt'] = True
+            self.config['cleanup'] = True
