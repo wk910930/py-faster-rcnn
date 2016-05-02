@@ -8,7 +8,9 @@ import  os
 import cPickle
 import uuid
 import scipy.io as sio
+import scipy.sparse
 import numpy as np
+import xml.etree.ElementTree as ET
 from datasets.imdb import imdb
 from fast_rcnn.config import cfg
 
@@ -118,6 +120,27 @@ class ilsvrc(imdb):
             image_index = [x.strip() for x in f.readlines()]
         return image_index
 
+    def gt_roidb(self):
+        """
+        Return the database of ground-truth regions of interest.
+
+        This function loads/saves from/to a cache file to speed up future calls.
+        """
+        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
+        if os.path.exists(cache_file):
+            with open(cache_file, 'rb') as fid:
+                roidb = cPickle.load(fid)
+            print '{} gt roidb loaded from {}'.format(self.name, cache_file)
+            return roidb
+
+        gt_roidb = [self._load_ilsvrc_annotation(index)
+                    for index in self.image_index]
+        with open(cache_file, 'wb') as fid:
+            cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
+        print 'wrote gt roidb to {}'.format(cache_file)
+
+        return gt_roidb
+
     def slide_roidb(self):
         """
         Return the database of regions of interest.
@@ -129,7 +152,12 @@ class ilsvrc(imdb):
                 roidb = cPickle.load(fid)
             print '{} slide roidb loaded from {}'.format(self.name, cache_file)
             return roidb
-        roidb = self._load_slide_roidb(None)
+        if self._image_set in self._gt_splits:
+            gt_roidb = self.gt_roidb()
+            slide_roidb = self._load_slide_roidb(gt_roidb)
+            roidb = imdb.merge_roidbs(gt_roidb, slide_roidb)
+        else:
+            roidb = self._load_slide_roidb(None)
         with open(cache_file, 'wb') as fid:
             cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
         print 'wrote slide roidb to {}'.format(cache_file)
@@ -145,6 +173,44 @@ class ilsvrc(imdb):
             box_list.append(raw_data[i][:, 0:4] - 1)
 
         return self.create_roidb_from_box_list(box_list, gt_roidb)
+
+    def _load_ilsvrc_annotation(self, index):
+        """
+        Load image and bounding boxes info from XML file in the PASCAL VOC
+        format.
+        """
+        filename = os.path.join(self._data_path, 'Annotations', index + '.xml')
+        tree = ET.parse(filename)
+        objs = tree.findall('object')
+        num_objs = len(objs)
+
+        boxes = np.zeros((num_objs, 4), dtype=np.uint16)
+        gt_classes = np.zeros((num_objs), dtype=np.int32)
+        overlaps = np.zeros((num_objs, self.num_classes), dtype=np.float32)
+        # "Seg" area for pascal is just the box area
+        seg_areas = np.zeros((num_objs), dtype=np.float32)
+
+        # Load object bounding boxes into a data frame.
+        for ix, obj in enumerate(objs):
+            bbox = obj.find('bndbox')
+            # Make pixel indexes 0-based
+            x1 = float(bbox.find('xmin').text) - 1
+            y1 = float(bbox.find('ymin').text) - 1
+            x2 = float(bbox.find('xmax').text) - 1
+            y2 = float(bbox.find('ymax').text) - 1
+            cls = self._class_to_ind[obj.find('name').text.lower().strip()]
+            boxes[ix, :] = [x1, y1, x2, y2]
+            gt_classes[ix] = cls
+            overlaps[ix, cls] = 1.0
+            seg_areas[ix] = (x2 - x1 + 1) * (y2 - y1 + 1)
+
+        overlaps = scipy.sparse.csr_matrix(overlaps)
+
+        return {'boxes' : boxes,
+                'gt_classes': gt_classes,
+                'gt_overlaps' : overlaps,
+                'flipped' : False,
+                'seg_areas' : seg_areas}
 
     def _write_ilsvrc_results_file(self, all_boxes, res_file):
         with open(res_file, 'wt') as f:
