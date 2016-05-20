@@ -72,8 +72,7 @@ class ilsvrc(imdb):
         self._class_to_ind = dict(zip(self.classes, xrange(self.num_classes)))
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
-        self._roidb_handler = self.slide_roidb
-        self._salt = str(uuid.uuid4())
+        self.set_proposal_method('slide')
         self.competition_mode(False)
         # Dataset splits that have ground-truth annotations (test splits
         # do not have gt annotations)
