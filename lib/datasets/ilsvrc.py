@@ -76,7 +76,7 @@ class ilsvrc(imdb):
         self.competition_mode(False)
         # Dataset splits that have ground-truth annotations (test splits
         # do not have gt annotations)
-        self._gt_splits = ('trainval', 'val1', 'val2')
+        self._gt_splits = ('trainval', 'val1')
 
         assert os.path.exists(self._devkit_path), \
                 'ILSVRCdevkit path does not exist: {}'.format(self._devkit_path)
