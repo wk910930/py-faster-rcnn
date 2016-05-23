@@ -1,10 +1,10 @@
 #!/bin/bash
 
 ./tools/test_craft.py --gpu 0 \
-     --def /home/kwang/deploy.prototxt \
-     --net /home/kwang/hkbn_4d_fast_rcnn_iter_130000.caffemodel \
+     --def test.prototxt \
+     --net model.caffemodel \
      --imdb ilsvrc_2013_val2 \
+     --comp \
      --cfg ./experiments/cfgs/craft.yml \
-     --bbox_mean /home/kwang/bbox_means.pkl \
-     --bbox_std /home/kwang/bbox_stds.pkl
-
+     --bbox_mean bbox_means.pkl \
+     --bbox_std bbox_stds.pkl
