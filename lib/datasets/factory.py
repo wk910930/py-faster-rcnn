@@ -34,7 +34,13 @@ for year in ['2015']:
 
 # Set up ilsvrc_2013_<split>
 for year in ['2013']:
-    for split in ['trainval', 'val1', 'val2', 'trainval_all','pos_1k5_box']:
+    for split in ['pos1k', 'val', 'val1', 'val2']:
+        name = 'ilsvrc_{}_{}'.format(year, split)
+        __sets[name] = (lambda split=split, year=year: ilsvrc(split, year))
+
+# Set up ilsvrc_2014_<split>
+for year in ['2014']:
+    for split in ['val', 'val1', 'val2']:
         name = 'ilsvrc_{}_{}'.format(year, split)
         __sets[name] = (lambda split=split, year=year: ilsvrc(split, year))
 
