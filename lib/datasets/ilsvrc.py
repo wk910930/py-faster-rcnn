@@ -93,7 +93,7 @@ class ilsvrc(imdb):
         """
         Construct an image path from the image's "index" identifier.
         """
-        image_path = os.path.join(self._data_path, 'Data', 'DET',
+        image_path = os.path.join(self._data_path, 'Data', self._image_set,
                                   index + '.JPEG')
         assert os.path.exists(image_path), \
                 'Path does not exist: {}'.format(image_path)
@@ -178,7 +178,7 @@ class ilsvrc(imdb):
         Load image and bounding boxes info from XML file in the PASCAL VOC
         format.
         """
-        filename = os.path.join(self._data_path, 'Annotations', index + '.xml')
+        filename = os.path.join(self._data_path, 'Annotations', self._image_set, index + '.xml')
         tree = ET.parse(filename)
         objs = tree.findall('object')
         num_objs = len(objs)
