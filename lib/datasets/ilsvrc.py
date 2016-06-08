@@ -181,6 +181,8 @@ class ilsvrc(imdb):
         filename = os.path.join(self._data_path, 'Annotations', self._image_set, index + '.xml')
         tree = ET.parse(filename)
         objs = tree.findall('object')
+        height = float(tree.find('size').find('height').text)
+        width = float(tree.find('size').find('width').text)
         num_objs = len(objs)
 
         boxes = np.zeros((num_objs, 4), dtype=np.uint16)
@@ -196,8 +198,8 @@ class ilsvrc(imdb):
 
             x1 = max(float(bbox.find('xmin').text) - 1, 0.0)
             y1 = max(float(bbox.find('ymin').text) - 1, 0.0)
-            x2 = float(bbox.find('xmax').text) - 1
-            y2 = float(bbox.find('ymax').text) - 1
+            x2 = min(float(bbox.find('xmax').text) - 1, width - 1)
+            y2 = min(float(bbox.find('ymax').text) - 1, height - 1)
             cls = self._class_to_ind[obj.find('name').text.lower().strip()]
             boxes[ix, :] = [x1, y1, x2, y2]
             gt_classes[ix] = cls
