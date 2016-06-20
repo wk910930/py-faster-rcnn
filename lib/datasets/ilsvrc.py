@@ -200,6 +200,8 @@ class ilsvrc(imdb):
             y1 = max(float(bbox.find('ymin').text) - 1, 0.0)
             x2 = min(float(bbox.find('xmax').text) - 1, width - 1)
             y2 = min(float(bbox.find('ymax').text) - 1, height - 1)
+            assert x2 > x1, 'xmax should be greater than xmin'
+            assert y2 > y1, 'ymax should be greater than ymin'
             cls = self._class_to_ind[obj.find('name').text.lower().strip()]
             boxes[ix, :] = [x1, y1, x2, y2]
             gt_classes[ix] = cls
