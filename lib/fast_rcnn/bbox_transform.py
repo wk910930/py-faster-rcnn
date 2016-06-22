@@ -74,3 +74,46 @@ def clip_boxes(boxes, im_shape):
     # y2 < im_shape[0]
     boxes[:, 3::4] = np.maximum(np.minimum(boxes[:, 3::4], im_shape[0] - 1), 0)
     return boxes
+
+def crop_boxes(boxes, crop_shape):
+    """
+    Crop boxes according given crop shape
+    """
+
+    crop_x1 = crop_shape[0]
+    crop_y1 = crop_shape[1]
+    crop_x2 = crop_shape[2]
+    crop_y2 = crop_shape[3]
+
+    l0 = boxes[:, 0] >= crop_x1
+    l1 = boxes[:, 1] >= crop_y1
+    l2 = boxes[:, 2] <= crop_x2
+    l3 = boxes[:, 3] <= crop_y2
+
+    L = l0 * l1 * l2 * l3
+    print L
+    cropped_boxes = boxes[L, :]
+
+    cropped_boxes[:, 0] = cropped_boxes[:, 0] - crop_x1
+    cropped_boxes[:, 1] = cropped_boxes[:, 1] - crop_y1
+    cropped_boxes[:, 2] = cropped_boxes[:, 2] - crop_x1
+    cropped_boxes[:, 3] = cropped_boxes[:, 3] - crop_y1
+
+    return cropped_boxes
+
+def crop_boxes_inv(cropped_boxes, crop_shape):
+    """
+    Inverse operation of crop_boxes
+    """
+
+    crop_x1 = crop_shape[0]
+    crop_y1 = crop_shape[1]
+
+    raw_boxes = np.zeros_like(cropped_boxes)
+
+    raw_boxes[:, 0] = cropped_boxes[:, 0] + crop_x1
+    raw_boxes[:, 1] = cropped_boxes[:, 1] + crop_y1
+    raw_boxes[:, 2] = cropped_boxes[:, 2] + crop_x1
+    raw_boxes[:, 3] = cropped_boxes[:, 3] + crop_y1
+
+    return raw_boxes
