@@ -267,17 +267,20 @@ def test_net(net, imdb, max_per_image=100, boxes_num_per_batch=0, vis=False):
             boxes_num_per_batch = float(boxes_num_per_batch)
             num_boxes = roidb[i]['boxes'].shape[0]
             num_batch = math.ceil(num_boxes/boxes_num_per_batch)
-            scores_batch = np.zeros((num_batch*boxes_num_per_batch,imdb.num_classes),dtype=np.float32)
-            boxes_batch = np.zeros((num_batch*boxes_num_per_batch,4*imdb.num_classes),dtype=np.float32)
+            scores_batch = np.zeros((num_batch*boxes_num_per_batch,imdb.num_classes), dtype=np.float32)
+            boxes_batch = np.zeros((num_batch*boxes_num_per_batch,4*imdb.num_classes), dtype=np.float32)
+            # replicate the first box num_batch*boxes_num_per_batch times for preallocation
             rois = np.tile(roidb[i]['boxes'][0,:],(num_batch*boxes_num_per_batch,1))
-            rois[:num_boxes,:] = roidb[i]['boxes']
+            # assign real boxes to rois
+            rois[:num_boxes, :] = box_proposals
             for j in xrange(int(num_batch)):
-                roi = rois[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch,:]
+                roi = rois[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch, :]
                 score, box = im_detect(net, im, roi)
-                scores_batch[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch,:] = score
-                boxes_batch[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch,:] = box
-            scores = scores_batch[:num_boxes,:]
-            boxes = boxes_batch[:num_boxes,:]
+                scores_batch[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch, :] = score
+                boxes_batch[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch, :] = box
+            # discard duplicated results
+            scores = scores_batch[:num_boxes, :]
+            boxes = boxes_batch[:num_boxes, :]
         else:
             scores, boxes = im_detect(net, im, box_proposals)
         _t['im_detect'].toc()
