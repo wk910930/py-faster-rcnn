@@ -91,7 +91,6 @@ def crop_boxes(boxes, crop_shape):
     l3 = boxes[:, 3] <= crop_y2
 
     L = l0 * l1 * l2 * l3
-    print L
     cropped_boxes = boxes[L, :]
 
     cropped_boxes[:, 0] = cropped_boxes[:, 0] - crop_x1
