@@ -10,13 +10,14 @@
 from fast_rcnn.config import cfg, get_output_dir
 from fast_rcnn.bbox_transform import clip_boxes, bbox_transform_inv
 import argparse
+import math
 from utils.timer import Timer
 import numpy as np
 import cv2
 import caffe
 from fast_rcnn.nms_wrapper import nms
 import cPickle
-from utils.blob import im_list_to_blob
+from utils.blob import im_list_to_blob, im_list_to_fixed_spatial_blob
 import os
 
 def _get_image_blob(im):
@@ -51,7 +52,8 @@ def _get_image_blob(im):
         processed_ims.append(im)
 
     # Create a blob to hold the input images
-    blob = im_list_to_blob(processed_ims)
+    # blob = im_list_to_blob(processed_ims)
+    blob = im_list_to_fixed_spatial_blob(processed_ims, cfg.TEST.MAX_SIZE, cfg.TEST.MAX_SIZE)
 
     return blob, np.array(im_scale_factors)
 
@@ -224,7 +226,7 @@ def apply_nms(all_boxes, thresh):
             nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
     return nms_boxes
 
-def test_net(net, imdb, max_per_image=100, thresh=0.05, vis=False):
+def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, vis=False):
     """Test a Fast R-CNN network on an image database."""
     num_images = len(imdb.image_index)
     # all detections are collected into:
@@ -255,7 +257,26 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, vis=False):
 
         im = cv2.imread(imdb.image_path_at(i))
         _t['im_detect'].tic()
-        scores, boxes = im_detect(net, im, box_proposals)
+        if boxes_num_per_batch != 0:
+            boxes_num_per_batch = float(boxes_num_per_batch)
+            num_boxes = box_proposals.shape[0]
+            num_batch = math.ceil(num_boxes/boxes_num_per_batch)
+            scores_batch = np.zeros((num_batch*boxes_num_per_batch,imdb.num_classes), dtype=np.float32)
+            boxes_batch = np.zeros((num_batch*boxes_num_per_batch,4*imdb.num_classes), dtype=np.float32)
+            # replicate the first box num_batch*boxes_num_per_batch times for preallocation
+            rois = np.tile(box_proposals[0,:],(num_batch*boxes_num_per_batch,1))
+            # assign real boxes to rois
+            rois[:num_boxes, :] = box_proposals
+            for j in xrange(int(num_batch)):
+                roi = rois[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch, :]
+                score, box = im_detect(net, im, roi)
+                scores_batch[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch, :] = score
+                boxes_batch[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch, :] = box
+            # discard duplicated results
+            scores = scores_batch[:num_boxes, :]
+            boxes = boxes_batch[:num_boxes, :]
+        else:
+            scores, boxes = im_detect(net, im, box_proposals)
         _t['im_detect'].toc()
 
         _t['misc'].tic()

@@ -225,8 +225,6 @@ class ilsvrc(imdb):
                     dets = all_boxes[cls_ind][im_ind]
                     if dets == []:
                         continue
-                    keep_inds = np.where(dets[:, -1] >= 0.01)[0]
-                    dets = dets[keep_inds, :]
                     # Expects 1-based indices
                     for k in xrange(dets.shape[0]):
                         f.write('{:d} {:d} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
