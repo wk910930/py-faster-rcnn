@@ -6,6 +6,7 @@
 # --------------------------------------------------------
 
 import numpy as np
+import math
 
 def bbox_transform(ex_rois, gt_rois):
     ex_widths = ex_rois[:, 2] - ex_rois[:, 0] + 1.0
@@ -110,9 +111,20 @@ def crop_boxes_inv(cropped_boxes, crop_shape):
 
     raw_boxes = np.zeros_like(cropped_boxes)
 
-    raw_boxes[:, 0] = cropped_boxes[:, 0] + crop_x1
-    raw_boxes[:, 1] = cropped_boxes[:, 1] + crop_y1
-    raw_boxes[:, 2] = cropped_boxes[:, 2] + crop_x1
-    raw_boxes[:, 3] = cropped_boxes[:, 3] + crop_y1
+    raw_boxes[:, 0::4] = cropped_boxes[:, 0::4] + crop_x1
+    raw_boxes[:, 1::4] = cropped_boxes[:, 1::4] + crop_y1
+    raw_boxes[:, 2::4] = cropped_boxes[:, 2::4] + crop_x1
+    raw_boxes[:, 3::4] = cropped_boxes[:, 3::4] + crop_y1
 
     return raw_boxes
+
+def cal_crop_shape(boxes, height, width, padding=0):
+    """
+    """
+    crop_x1 = math.floor(max(0, np.min(boxes[:, 0]) - padding))
+    crop_y1 = math.floor(max(0, np.min(boxes[:, 1]) - padding))
+    crop_x2 = math.ceil(min(width - 1, np.max(boxes[:, 2]) + padding))
+    crop_y2 = math.ceil(min(height -1 , np.max(boxes[:, 3]) + padding))
+
+    crop_shape = np.array([crop_x1, crop_y1, crop_x2, crop_y2])
+    return crop_shape
