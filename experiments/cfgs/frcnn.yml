@@ -5,6 +5,7 @@ TEST:
   # IoU >= this threshold)
   NMS: 0.3
   PROPOSAL_METHOD: 'slide'
+  BBOX_REG: true
 
 EXP_DIR: craft_ilsvrc
 # The mapping from image coordinates to feature map coordinates might cause
