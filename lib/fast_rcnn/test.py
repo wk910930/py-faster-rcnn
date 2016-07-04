@@ -261,10 +261,10 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
             boxes_num_per_batch = float(boxes_num_per_batch)
             num_boxes = box_proposals.shape[0]
             num_batch = math.ceil(num_boxes/boxes_num_per_batch)
-            scores_batch = np.zeros((num_batch*boxes_num_per_batch,imdb.num_classes), dtype=np.float32)
-            boxes_batch = np.zeros((num_batch*boxes_num_per_batch,4*imdb.num_classes), dtype=np.float32)
+            scores_batch = np.zeros((num_batch*boxes_num_per_batch, imdb.num_classes), dtype=np.float32)
+            boxes_batch = np.zeros((num_batch*boxes_num_per_batch, 4*imdb.num_classes), dtype=np.float32)
             # replicate the first box num_batch*boxes_num_per_batch times for preallocation
-            rois = np.tile(box_proposals[0,:],(num_batch*boxes_num_per_batch,1))
+            rois = np.tile(box_proposals[0, :], (num_batch*boxes_num_per_batch, 1))
             # assign real boxes to rois
             rois[:num_boxes, :] = box_proposals
             for j in xrange(int(num_batch)):
