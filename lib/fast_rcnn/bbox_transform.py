@@ -7,6 +7,7 @@
 
 import numpy as np
 import math
+from utils.cython_bbox import bbox_overlaps
 
 def bbox_transform(ex_rois, gt_rois):
     ex_widths = ex_rois[:, 2] - ex_rois[:, 0] + 1.0
@@ -75,6 +76,18 @@ def clip_boxes(boxes, im_shape):
     # y2 < im_shape[0]
     boxes[:, 3::4] = np.maximum(np.minimum(boxes[:, 3::4], im_shape[0] - 1), 0)
     return boxes
+
+def bbox_voting(cls_dets_after_nms, cls_dets, threshold):
+    """
+    A nice trick to improve performance durning TESTING.
+    Check 'Object detection via a multi-region & semantic segmentation-aware CNN model' for details.
+    """
+    overlaps = bbox_overlaps(cls_dets_after_nms.astype(np.float), cls_dets.astype(np.float))
+    for i in xrange(cls_dets_after_nms.shape[0]):
+        candidate_bbox = cls_dets[overlaps[i, :] >= threshold, :]
+        for k in xrange(4):
+            cls_dets_after_nms[i, k] = np.inner(candidate_bbox[:, 4], candidate_bbox[:, k]) / np.sum(candidate_bbox[:, 4])
+    return cls_dets_after_nms
 
 def crop_boxes(boxes, crop_shape):
     """

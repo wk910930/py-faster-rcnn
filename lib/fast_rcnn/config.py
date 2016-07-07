@@ -148,6 +148,12 @@ __C.TEST.SVM = False
 # Test using bounding-box regressors
 __C.TEST.BBOX_REG = True
 
+# Test using bbox voting
+__C.TEST.BBOX_VOTE = False
+
+# Test using bbox voting with threshold
+__C.TEST.BBOX_VOTE_THRESH= 0.5
+
 # Propose boxes
 __C.TEST.HAS_RPN = False
 

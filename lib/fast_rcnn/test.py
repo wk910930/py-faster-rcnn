@@ -8,7 +8,7 @@
 """Test a Fast R-CNN network on an imdb (image database)."""
 
 from fast_rcnn.config import cfg, get_output_dir
-from fast_rcnn.bbox_transform import clip_boxes, bbox_transform_inv
+from fast_rcnn.bbox_transform import clip_boxes, bbox_transform_inv, bbox_voting
 import argparse
 import math
 from utils.timer import Timer
@@ -288,7 +288,11 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
             cls_dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])) \
                 .astype(np.float32, copy=False)
             keep = nms(cls_dets, cfg.TEST.NMS)
-            cls_dets = cls_dets[keep, :]
+            if cfg.TEST.BBOX_VOTE:
+                cls_dets_after_nms = cls_dets[keep, :]
+                cls_dets = bbox_voting(cls_dets_after_nms, cls_dets, threshold=cfg.TEST.BBOX_VOTE_THRESH)
+            else:
+                cls_dets = cls_dets[keep, :]
             if vis:
                 vis_detections(im, imdb.classes[j], cls_dets)
             all_boxes[j][i] = cls_dets
