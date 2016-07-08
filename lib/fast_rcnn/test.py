@@ -257,10 +257,9 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
 
         im = cv2.imread(imdb.image_path_at(i))
         _t['im_detect'].tic()
-        if boxes_num_per_batch != 0:
-            boxes_num_per_batch = float(boxes_num_per_batch)
+        if boxes_num_per_batch > 0:
             num_boxes = box_proposals.shape[0]
-            num_batch = math.ceil(num_boxes/boxes_num_per_batch)
+            num_batch = (num_boxes + boxes_num_per_batch -1) / boxes_num_per_batch
             scores_batch = np.zeros((num_batch*boxes_num_per_batch, imdb.num_classes), dtype=np.float32)
             boxes_batch = np.zeros((num_batch*boxes_num_per_batch, 4*imdb.num_classes), dtype=np.float32)
             # replicate the first box num_batch*boxes_num_per_batch times for preallocation
