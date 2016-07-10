@@ -266,7 +266,7 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
             rois = np.tile(box_proposals[0, :], (num_batch*boxes_num_per_batch, 1))
             # assign real boxes to rois
             rois[:num_boxes, :] = box_proposals
-            for j in xrange(int(num_batch)):
+            for j in xrange(num_batch):
                 roi = rois[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch, :]
                 score, box = im_detect(net, im, roi)
                 scores_batch[j*boxes_num_per_batch:(j+1)*boxes_num_per_batch, :] = score
