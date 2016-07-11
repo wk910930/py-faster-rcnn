@@ -44,6 +44,12 @@ for year in ['2014']:
         name = 'ilsvrc_{}_{}'.format(year, split)
         __sets[name] = (lambda split=split, year=year: ilsvrc(split, year))
 
+# Set up ilsvrc_2016_<split>
+for year in ['2016']:
+    for split in ['aug']:
+        name = 'ilsvrc_{}_{}'.format(year, split)
+        __sets[name] = (lambda split=split, year=year: ilsvrc(split, year))
+
 def get_imdb(name):
     """Get an imdb (image database) by name."""
     if not __sets.has_key(name):
