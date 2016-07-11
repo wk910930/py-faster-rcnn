@@ -5,6 +5,8 @@
 # --------------------------------------------------------
 
 import  os
+import os.path as osp
+import datasets.ds_utils as ds_utils
 import cPickle
 import uuid
 import scipy.io as sio
@@ -21,7 +23,8 @@ class ilsvrc(imdb):
         # ILSVRC specific config options
         self.config = {'top_k' : 2000,
                        'use_salt' : True,
-                       'cleanup' : True}
+                       'cleanup' : True,
+                       'min_size' : 2}
         # name, paths
         self._year = year
         self._image_set = image_set
@@ -140,37 +143,70 @@ class ilsvrc(imdb):
 
         return gt_roidb
 
+    def _get_box_file(self, index):
+        file_name = index + '.mat'
+        return osp.join(self._image_set, file_name)
+
     def slide_roidb(self):
+        return self._roidb_from_proposals('slide')
+
+    def _roidb_from_proposals(self, method):
         """
-        Return the database of regions of interest.
-        This function loads/saves from/to a cache file to speed up future calls.
+        Creates a roidb from pre-computed proposals of a particular methods.
         """
-        cache_file = os.path.join(self.cache_path, self.name + '_slide_roidb.pkl')
-        if os.path.exists(cache_file):
+        top_k = self.config['top_k']
+        cache_file = osp.join(self.cache_path, self.name +
+                              '_{:s}_top{:d}'.format(method, top_k) +
+                              '_roidb.pkl')
+
+        if osp.exists(cache_file):
             with open(cache_file, 'rb') as fid:
                 roidb = cPickle.load(fid)
-            print '{} slide roidb loaded from {}'.format(self.name, cache_file)
+            print '{:s} {:s} roidb loaded from {:s}'.format(self.name, method,
+                                                            cache_file)
             return roidb
+
         if self._image_set in self._gt_splits:
             gt_roidb = self.gt_roidb()
-            slide_roidb = self._load_slide_roidb(gt_roidb)
-            roidb = imdb.merge_roidbs(gt_roidb, slide_roidb)
+            method_roidb = self._load_proposals(method, gt_roidb)
+            roidb = imdb.merge_roidbs(gt_roidb, method_roidb)
         else:
-            roidb = self._load_slide_roidb(None)
+            roidb = self._load_proposals(method, None)
         with open(cache_file, 'wb') as fid:
             cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote slide roidb to {}'.format(cache_file)
+        print 'wrote {:s} roidb to {:s}'.format(method, cache_file)
         return roidb
 
-    def _load_slide_roidb(self, gt_roidb):
+    def _load_proposals(self, method, gt_roidb):
+        """
+        Load pre-computed proposals in the format provided by Jan Hosang:
+        http://www.mpi-inf.mpg.de/departments/computer-vision-and-multimodal-
+          computing/research/object-recognition-and-scene-understanding/how-
+          good-are-detection-proposals-really/
+        """
         box_list = []
-        filename = os.path.abspath(os.path.join(self.cache_path, '..', 'slide_data', self.name + '.mat'))
-        assert os.path.exists(filename), 'Slide anchor data not found at: {}'.format(filename)
-        raw_data = sio.loadmat(filename)['boxes'].ravel()
+        top_k = self.config['top_k']
+        valid_methods = ['slide']
+        assert method in valid_methods
 
-        for i in xrange(raw_data.shape[0]):
-            box_list.append(raw_data[i][:, 0:4] - 1)
+        print 'Loading {} boxes'.format(method)
+        for i, index in enumerate(self._image_index):
+            if i % 1000 == 0:
+                print '{:d} / {:d}'.format(i + 1, len(self._image_index))
 
+            box_file = osp.join(
+                cfg.DATA_DIR, 'ilsvrc_proposals', method, 'mat',
+                self._get_box_file(index))
+
+            raw_data = sio.loadmat(box_file)['boxes']
+            boxes = np.maximum(raw_data[:, 0:4] - 1, 0).astype(np.uint16)
+            # Remove duplicate boxes and very small boxes and then take top k
+            keep = ds_utils.unique_boxes(boxes)
+            boxes = boxes[keep, :]
+            keep = ds_utils.filter_small_boxes(boxes, self.config['min_size'])
+            boxes = boxes[keep, :]
+            boxes = boxes[:top_k, :]
+            box_list.append(boxes)
         return self.create_roidb_from_box_list(box_list, gt_roidb)
 
     def _load_ilsvrc_annotation(self, index):
@@ -234,9 +270,9 @@ class ilsvrc(imdb):
 
     def evaluate_detections(self, all_boxes, output_dir):
         res_file = os.path.join(output_dir, ('detections_' +
-                                         self._image_set +
-                                         self._year +
-                                         '_results'))
+                                             self._image_set +
+                                             self._year +
+                                             '_results'))
         if self.config['use_salt']:
             res_file += '_{}'.format(str(uuid.uuid4()))
         res_file += '.txt'
