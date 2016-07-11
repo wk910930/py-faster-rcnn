@@ -10,15 +10,14 @@
 
 import cPickle
 import _init_paths
-from datasets.coco import coco
+from datasets.factory import get_imdb
 from roi_data_layer.roidb import prepare_roidb
 from roi_data_layer.roidb import add_bbox_regression_targets
 
-image_set = 'train'
-year = '2014'
+imdb_name = 'coco_2014_val'
 proposal_method = 'mcg'
 
-imdb = coco(image_set, year)
+imdb = get_imdb(imdb_name)
 imdb.set_proposal_method(proposal_method)
 prepare_roidb(imdb)
 roidb = imdb.roidb
@@ -44,7 +43,7 @@ with open('bbox_means.pkl', 'wb') as fid1:
 with open('bbox_stds.pkl', 'wb') as fid2:
     cPickle.dump(std, fid2, cPickle.HIGHEST_PROTOCOL)
 
-with open('rois_coco_' + image_set + '_' + year + '.txt', 'w') as f:
+with open('rois_' + imdb_name + '.txt', 'w') as f:
     for image_index in xrange(len(roidb)):
         if image_index % 1000 == 0:
             print '{}/{}'.format(image_index, len(roidb))
