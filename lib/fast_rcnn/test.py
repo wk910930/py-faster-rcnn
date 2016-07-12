@@ -226,6 +226,12 @@ def apply_nms(all_boxes, thresh):
             nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
     return nms_boxes
 
+def scores_doping(scores, bbox_top_n=10):
+    scores_flatten = np.ravel(scores).copy()
+    bbox_inds, cls_inds = np.unravel_index(scores_flatten.argsort(), scores.shape)
+    top_classes = np.unique(cls_inds[-bbox_top_n:])
+    return top_classes
+
 def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, vis=False):
     """Test a Fast R-CNN network on an image database."""
     num_images = len(imdb.image_index)
