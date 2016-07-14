@@ -227,6 +227,8 @@ def apply_nms(all_boxes, thresh):
     return nms_boxes
 
 def scores_doping(scores, bbox_top_n=10):
+    if bbox_top_n <= 0:
+        return []
     scores_flatten = np.ravel(scores).copy()
     bbox_inds, cls_inds = np.unravel_index(scores_flatten.argsort(), scores.shape)
     top_classes = np.unique(cls_inds[-bbox_top_n:])
