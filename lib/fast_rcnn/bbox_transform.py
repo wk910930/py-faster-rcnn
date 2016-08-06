@@ -82,11 +82,12 @@ def bbox_voting(cls_dets_after_nms, cls_dets, threshold):
     A nice trick to improve performance durning TESTING.
     Check 'Object detection via a multi-region & semantic segmentation-aware CNN model' for details.
     """
-    overlaps = bbox_overlaps(cls_dets_after_nms.astype(np.float), cls_dets.astype(np.float))
+    overlaps = bbox_overlaps(
+        np.ascontiguousarray(cls_dets_after_nms[:, :4], dtype=np.float),
+        np.ascontiguousarray(cls_dets[:, :4], dtype=np.float))
     for i in xrange(cls_dets_after_nms.shape[0]):
         candidate_bbox = cls_dets[overlaps[i, :] >= threshold, :]
-        for k in xrange(4):
-            cls_dets_after_nms[i, k] = np.inner(candidate_bbox[:, 4], candidate_bbox[:, k]) / np.sum(candidate_bbox[:, 4])
+        cls_dets_after_nms[i, :4] = np.average(candidate_bbox[:, :4], axis=0, weights=candidate_bbox[:, 4])
     return cls_dets_after_nms
 
 def crop_boxes(boxes, crop_shape):
@@ -137,7 +138,7 @@ def cal_crop_shape(boxes, height, width, padding=0):
     crop_x1 = math.floor(max(0, np.min(boxes[:, 0]) - padding))
     crop_y1 = math.floor(max(0, np.min(boxes[:, 1]) - padding))
     crop_x2 = math.ceil(min(width - 1, np.max(boxes[:, 2]) + padding))
-    crop_y2 = math.ceil(min(height -1 , np.max(boxes[:, 3]) + padding))
+    crop_y2 = math.ceil(min(height -1, np.max(boxes[:, 3]) + padding))
 
     crop_shape = np.array([crop_x1, crop_y1, crop_x2, crop_y2])
     return crop_shape
