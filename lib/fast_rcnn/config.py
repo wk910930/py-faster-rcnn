@@ -157,6 +157,9 @@ __C.TEST.BBOX_VOTE_THRESH= 0.5
 # Test using left-right flipping
 __C.TEST.LR_FLIP = False
 
+# Cache raw all_boxes (i.e. before NMS)
+__C.TEST.CACHE_RAW_ABOXES = False
+
 # Propose boxes
 __C.TEST.HAS_RPN = False
 

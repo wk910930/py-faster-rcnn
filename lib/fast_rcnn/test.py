@@ -315,6 +315,9 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
     all_boxes = [[[] for _ in xrange(num_images)]
                  for _ in xrange(imdb.num_classes)]
 
+    raw_all_boxes = [[[] for _ in xrange(num_images)]
+                 for _ in xrange(imdb.num_classes)]
+
     output_dir = get_output_dir(imdb, net)
 
     # timers
@@ -366,6 +369,7 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
             cls_boxes = boxes[inds, j*4:(j+1)*4]
             cls_dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])) \
                 .astype(np.float32, copy=False)
+            raw_all_boxes[j][i] = cls_dets
             keep = nms(cls_dets, cfg.TEST.NMS)
             if cfg.TEST.BBOX_VOTE:
                 cls_dets_after_nms = cls_dets[keep, :]
@@ -394,6 +398,11 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
     det_file = os.path.join(output_dir, 'detections.pkl')
     with open(det_file, 'wb') as f:
         cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
+
+    if cfg.TEST.CACHE_RAW_ABOXES:
+        raw_aboxes_file = os.path.join(output_dir, 'raw_all_boxes.pkl')
+        with open(raw_aboxes_file, 'wb') as f:
+            cPickle.dump(raw_all_boxes, f, cPickle.HIGHEST_PROTOCOL)
 
     print 'Evaluating detections'
     imdb.evaluate_detections(all_boxes, output_dir)
