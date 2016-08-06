@@ -154,6 +154,9 @@ __C.TEST.BBOX_VOTE = False
 # Test using bbox voting with threshold
 __C.TEST.BBOX_VOTE_THRESH= 0.5
 
+# Test using left-right flipping
+__C.TEST.LR_FLIP = False
+
 # Propose boxes
 __C.TEST.HAS_RPN = False
 

@@ -216,16 +216,39 @@ def im_detect(net, im, boxes=None):
         scores = net.blobs['cls_score'].data
     else:
         # use softmax estimated probabilities
-        scores = blobs_out['cls_prob']
+        scores = blobs_out['cls_prob'].copy()
 
     if cfg.TEST.BBOX_REG:
         # Apply bounding-box regression deltas
-        box_deltas = blobs_out['bbox_pred']
+        box_deltas = blobs_out['bbox_pred'].copy()
         pred_boxes = bbox_transform_inv(boxes, box_deltas)
         pred_boxes = clip_boxes(pred_boxes, im.shape)
     else:
         # Simply repeat the boxes, once for each class
         pred_boxes = np.tile(boxes, (1, scores.shape[1]))
+
+    if cfg.TEST.LR_FLIP:
+        flip_im = np.fliplr(im)
+        im_height, im_width, _ = im.shape
+        flip_boxes = boxes.copy()
+        flip_boxes[:, 2] = im_width - 1 - boxes[:, 0]
+        flip_boxes[:, 0] = im_width - 1 - boxes[:, 2]
+
+        flip_blobs, im_scales = _get_blobs(flip_im, flip_boxes)
+
+        # reshape network inputs
+        net.blobs['data'].data[...] = flip_blobs['data']
+        net.blobs['rois'].data[...] = flip_blobs['rois']
+        flip_blobs_out = net.forward()
+
+        flip_scores = flip_blobs_out['cls_prob']
+        flip_box_deltas = flip_blobs_out['bbox_pred']
+        flip_box_deltas[:, 0::4] = -flip_box_deltas[:, 0::4]
+
+        scores = (scores + flip_scores) / 2
+        box_deltas = (box_deltas + flip_box_deltas) / 2
+        pred_boxes = bbox_transform_inv(boxes, box_deltas)
+        pred_boxes = clip_boxes(pred_boxes, im.shape)
 
     if cfg.DEDUP_BOXES > 0 and not cfg.TEST.HAS_RPN:
         # Map scores and predictions back to the original set of boxes
