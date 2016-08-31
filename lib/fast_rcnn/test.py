@@ -90,7 +90,7 @@ def _project_im_rois(im_rois, scales):
 
         areas = widths * heights
         scaled_areas = areas[:, np.newaxis] * (scales[np.newaxis, :] ** 2)
-        diff_areas = np.abs(scaled_areas - 224 * 224)
+        diff_areas = np.abs(scaled_areas - cfg.TEST.SCALES_TARGET * cfg.TEST.SCALES_TARGET)
         levels = diff_areas.argmin(axis=1)[:, np.newaxis]
     else:
         levels = np.zeros((im_rois.shape[0], 1), dtype=np.int)

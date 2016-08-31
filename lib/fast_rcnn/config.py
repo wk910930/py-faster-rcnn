@@ -137,6 +137,9 @@ __C.TEST.SCALES = (600,)
 # Max pixel size of the longest side of a scaled input image
 __C.TEST.MAX_SIZE = 1000
 
+# The prefered mini side of scaled bbox when doing multi-scale testing
+__C.TEST.SCALES_TARGET = 224
+
 # Overlap threshold used for non-maximum suppression (suppress boxes with
 # IoU >= this threshold)
 __C.TEST.NMS = 0.3
