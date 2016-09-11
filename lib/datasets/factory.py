@@ -46,7 +46,7 @@ for year in ['2014']:
 
 # Set up ilsvrc_2016_<split>
 for year in ['2016']:
-    for split in ['aug']:
+    for split in ['test']:
         name = 'ilsvrc_{}_{}'.format(year, split)
         __sets[name] = (lambda split=split, year=year: ilsvrc(split, year))
 
