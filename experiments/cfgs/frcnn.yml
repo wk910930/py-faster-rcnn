@@ -7,7 +7,7 @@ TEST:
   PROPOSAL_METHOD: 'slide'
   BBOX_REG: true
 
-EXP_DIR: craft_ilsvrc
+EXP_DIR: experiemtns
 # The mapping from image coordinates to feature map coordinates might cause
 # some boxes that are distinct in image space to become identical in feature
 # coordinates. If DEDUP_BOXES > 0, then DEDUP_BOXES is used as the scale factor
