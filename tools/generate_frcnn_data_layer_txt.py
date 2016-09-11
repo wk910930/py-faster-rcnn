@@ -21,9 +21,9 @@ def parse_args():
     Parse input arguments
     """
     parser = argparse.ArgumentParser(description='Generate txt file for fine-tuning')
-    parser.add_argument('--imdb', dest='imdb_name',
+    parser.add_argument('--imdb', dest='imdb_names',
                         help='dataset to test',
-                        default='coco_2014_minival', type=str)
+                        nargs='+', type=str)
     parser.add_argument('--method', dest='method',
                         help='proposal method',
                         default='mcg', type=str)
@@ -66,7 +66,10 @@ if __name__ == '__main__':
     print 'Called with args:'
     print args
 
-    roidb = load_roidb(args.imdb_name, args.method)
+    roidb = []
+    for imdb_name in args.imdb_names:
+        print 'loading {}'.format(imdb_name)
+        roidb += load_roidb(imdb_name, args.method)
 
     mean, std = add_bbox_regression_targets(roidb)
 
@@ -75,7 +78,7 @@ if __name__ == '__main__':
     with open('bbox_stds.pkl', 'wb') as fid2:
         cPickle.dump(std, fid2, cPickle.HIGHEST_PROTOCOL)
 
-    with open('rois_' + args.imdb_name + '.txt', 'w') as f:
+    with open('rois_output.txt', 'w') as f:
         for image_index in xrange(len(roidb)):
             if image_index % 1000 == 0:
                 print '{} / {}'.format(image_index, len(roidb))
