@@ -119,3 +119,4 @@ if __name__ == '__main__':
 
     test_net(net, imdb, max_per_image=args.max_per_image,
              boxes_num_per_batch=args.boxes_num_per_batch, vis=args.vis)
+    print 'Done'
