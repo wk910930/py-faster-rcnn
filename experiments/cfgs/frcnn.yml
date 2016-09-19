@@ -6,6 +6,7 @@ TEST:
   NMS: 0.3
   PROPOSAL_METHOD: 'slide'
   BBOX_REG: true
+  SCALES_TARGET: 224
 
 EXP_DIR: experiemtns
 # The mapping from image coordinates to feature map coordinates might cause
