@@ -19,6 +19,7 @@ from fast_rcnn.nms_wrapper import nms
 import cPickle
 from utils.blob import im_list_to_blob, im_list_to_fixed_spatial_blob
 import os
+import scipy.io as sio
 
 def _get_image_blob(im):
     """Converts an image into a network input.
@@ -364,6 +365,13 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
         else:
             scores, boxes = im_detect(net, im, box_proposals)
         _t['im_detect'].toc()
+
+        if cfg.TEST.SAVE_MAT:
+            mat_dir = os.path.join(output_dir, imdb._image_set)
+            if not os.path.exists(mat_dir):
+                os.mkdir(mat_dir)
+            im_name = os.path.splitext(os.path.basename(imdb.image_path_at(i)))[0]
+            sio.savemat('%s/%s.mat' % (mat_dir, im_name), {'scores': scores, 'boxes': boxes})
 
         _t['misc'].tic()
         # skip j = 0, because it's the background class
