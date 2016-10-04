@@ -82,6 +82,9 @@ def scale_bboxes(bboxes, scale):
     Rescale bboxes according to the given scale
     WARNING: this function doesn't clip bboxes
     """
+    if scale == 1.0:
+        return bboxes.copy()
+
     rescaled_bboxes = bboxes.copy()
 
     widths = bboxes[:, 2] - bboxes[:, 0] + 1.0
@@ -96,15 +99,16 @@ def scale_bboxes(bboxes, scale):
 
     return rescaled_bboxes
 
-def find_valid_ref_bboxes(pivot_bbox, all_bboxes, im_shape, pivot_scale=1.0, iou_thresh=0.0):
+def find_valid_ref_bboxes(bbox_proposals, im_shape, pivot_scale=1.0):
     """
-    Find and return the ref bboxes index according to pivot_bbox
+    Return overlaps between pivot bboxes and all other bboxes
     """
-    scaled_pivot_bbox = scale_bboxes(pivot_bbox[np.newaxis, :], pivot_scale)
-    scaled_pivot_bbox = clip_boxes(scaled_pivot_bbox, im_shape)
-    iou_mat = bbox_overlaps(scaled_pivot_bbox.astype(float), all_bboxes.astype(float))
-    keep = np.where(iou_mat[0, :] >= iou_thresh)[0]
-    return keep
+    pivot_bboxes = clip_boxes(scale_bboxes(bbox_proposals, pivot_scale), im_shape)
+    pivot_ref_overlaps = bbox_overlaps(
+            np.ascontiguousarray(pivot_bboxes, dtype=np.float),
+            np.ascontiguousarray(bbox_proposals, dtype=np.float))
+    np.fill_diagonal(pivot_ref_overlaps, 1.0)
+    return pivot_ref_overlaps
 
 def bbox_voting(cls_dets_after_nms, cls_dets, threshold):
     """
