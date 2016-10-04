@@ -98,13 +98,13 @@ def scale_bboxes(bboxes, scale):
 
 def find_valid_ref_bboxes(pivot_bbox, all_bboxes, im_shape, pivot_scale=1.0, iou_thresh=0.0):
     """
-    Find and return the ref bboxes according to pivot_bbox
+    Find and return the ref bboxes index according to pivot_bbox
     """
     scaled_pivot_bbox = scale_bboxes(pivot_bbox[np.newaxis, :], pivot_scale)
     scaled_pivot_bbox = clip_boxes(scaled_pivot_bbox, im_shape)
     iou_mat = bbox_overlaps(scaled_pivot_bbox.astype(float), all_bboxes.astype(float))
     keep = np.where(iou_mat[0, :] >= iou_thresh)[0]
-    return all_bboxes[keep, :]
+    return keep
 
 def bbox_voting(cls_dets_after_nms, cls_dets, threshold):
     """
