@@ -16,6 +16,7 @@ import numpy as np
 import cv2
 import caffe
 from fast_rcnn.nms_wrapper import nms
+from fast_rcnn.bbox_transform import find_valid_ref_bboxes
 import cPickle
 from utils.blob import im_list_to_blob, im_list_to_fixed_spatial_blob
 import os
@@ -170,6 +171,8 @@ def im_detect(net, im, boxes=None):
         # use softmax estimated probabilities
         scores = blobs_out['cls_prob'].copy()
 
+    global_pool = net.blobs['global_pool'].data
+
     if cfg.TEST.BBOX_REG:
         # Apply bounding-box regression deltas
         box_deltas = blobs_out['bbox_pred'].copy()
@@ -207,7 +210,7 @@ def im_detect(net, im, boxes=None):
         scores = scores[inv_index, :]
         pred_boxes = pred_boxes[inv_index, :]
 
-    return scores, pred_boxes
+    return scores, pred_boxes, global_pool
 
 def vis_detections(im, class_name, dets, thresh=0.3):
     """Visual debugging of detections."""
@@ -258,6 +261,46 @@ def scores_doping(scores, bbox_top_n=10):
     top_classes = np.unique(cls_inds[-bbox_top_n:])
     return top_classes
 
+def edge_reasoning(net, feat_blob):
+    """Reasoning edge between proposals in an image
+
+    Arguments:
+        net (caffe.Net): Reasoning network to use
+        boxes (ndarray): R x 4 array of object proposals or None (for RPN)
+
+    Returns:
+        scores (ndarray): R x K array of object class scores (K includes
+            background as object category 0)
+    """
+
+    # reshape network inputs
+    net.blobs['feat'].reshape(*(feat_blob.shape))
+
+    # do forward
+    forward_kwargs = {'feat': None}
+    forward_kwargs['feat'] = feat_blob.astype(np.float32, copy=False)
+    blobs_out = net.forward(**forward_kwargs)
+
+    # use softmax estimated probabilities
+    scores = blobs_out['cls_prob']
+
+    return scores
+
+def pairwise_term(reasoning_net, bbox_proposals, global_pool, pivot_scale, iou_thresh, im_shape):
+    num_bbox = bbox_proposals.shape[0]
+    pairwise_term_scores = np.zeros((num_bbox, 201))
+    pivot_ref_overlaps = find_valid_ref_bboxes(bbox_proposals, im_shape, pivot_scale)
+    for pivot_index in xrange(num_bbox):
+        ref_indices = np.where(pivot_ref_overlaps[pivot_index, :] >= iou_thresh)[0]
+        num_ref = ref_indices.shape[0]
+        pivot_feat = global_pool[[pivot_index], :]
+        pivot_feats = np.tile(pivot_feat, (num_ref, 1, 1, 1))
+        ref_feats = global_pool[ref_indices, :]
+        feat_blob = np.concatenate((pivot_feats, ref_feats), axis=1)
+        pariwise_scores = edge_reasoning(reasoning_net, feat_blob)
+        pairwise_term_scores[pivot_index, :] = np.average(pariwise_scores, axis=0)
+    return pairwise_term_scores
+
 def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, vis=False):
     """Test a Fast R-CNN network on an image database."""
     num_images = len(imdb.image_index)
@@ -272,8 +315,10 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
 
     output_dir = get_output_dir(imdb, net)
 
+    reasoning_net = caffe.Net('/home/kwang/py-faster-rcnn/models/reasoning/feat_reasoning_deploy.prototxt', '/home/kwang/py-faster-rcnn/models/reasoning/tmp_iter_30000.caffemodel', caffe.TEST)
+
     # timers
-    _t = {'im_detect' : Timer(), 'misc' : Timer()}
+    _t = {'im_detect' : Timer(), 'edge_reasoning' : Timer(), 'misc' : Timer()}
 
     if not cfg.TEST.HAS_RPN:
         roidb = imdb.roidb
@@ -314,8 +359,18 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
             scores = scores_batch[:num_boxes, :]
             boxes = boxes_batch[:num_boxes, :]
         else:
-            scores, boxes = im_detect(net, im, box_proposals)
+            scores, boxes, global_pool = im_detect(net, im, box_proposals)
         _t['im_detect'].toc()
+
+        _t['edge_reasoning'].tic()
+        if True:
+            pivot_scale = 2.0
+            iou_thresh = 0.01
+            alpha = 0.5
+            assert num_boxes == global_pool.shape[0]
+            pairwise_term_scores = pairwise_term(reasoning_net, box_proposals.astype(np.float), global_pool, pivot_scale, iou_thresh, im.shape)
+            scores = scores + alpha * pairwise_term_scores
+        _t['edge_reasoning'].toc()
 
         if cfg.TEST.SAVE_MAT:
             mat_dir = os.path.join(output_dir, imdb._image_set)
@@ -354,9 +409,9 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
                     all_boxes[j][i] = all_boxes[j][i][keep, :]
         _t['misc'].toc()
 
-        print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
+        print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s {:.3f}s' \
               .format(i + 1, num_images, _t['im_detect'].average_time,
-                      _t['misc'].average_time)
+                      _t['edge_reasoning'].average_time,_t['misc'].average_time)
 
     det_file = os.path.join(output_dir, 'detections.pkl')
     with open(det_file, 'wb') as f:
