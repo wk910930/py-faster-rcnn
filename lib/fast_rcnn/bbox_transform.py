@@ -77,34 +77,33 @@ def clip_boxes(boxes, im_shape):
     boxes[:, 3::4] = np.maximum(np.minimum(boxes[:, 3::4], im_shape[0] - 1), 0)
     return boxes
 
-def scale_bboxes(bboxes, scale):
+def scale_boxes(boxes, scale, im_shape):
     """
-    Rescale bboxes according to the given scale
-    WARNING: this function doesn't clip bboxes
+    Rescale boxes according to the given scale
     """
-    assert bboxes.dtype == np.float, 'bboxes must be np.float data type'
+    assert boxes.dtype == np.float, 'boxes must be np.float data type'
     if scale == 1.0:
-        return bboxes.copy()
+        return boxes.copy()
 
-    rescaled_bboxes = bboxes.copy()
+    rescaled_boxes = boxes.copy()
 
-    widths = bboxes[:, 2] - bboxes[:, 0] + 1.0
-    heights = bboxes[:, 3] - bboxes[:, 1] + 1.0
-    ctr_x = bboxes[:, 0] + 0.5 * widths
-    ctr_y = bboxes[:, 1] + 0.5 * heights
+    widths = boxes[:, 2] - boxes[:, 0] + 1.0
+    heights = boxes[:, 3] - boxes[:, 1] + 1.0
+    ctr_x = boxes[:, 0] + 0.5 * widths
+    ctr_y = boxes[:, 1] + 0.5 * heights
 
-    rescaled_bboxes[:, 0] = ctr_x - widths * scale * 0.5
-    rescaled_bboxes[:, 1] = ctr_y - heights * scale * 0.5
-    rescaled_bboxes[:, 2] = ctr_x + widths * scale * 0.5
-    rescaled_bboxes[:, 3] = ctr_y + heights * scale * 0.5
+    rescaled_boxes[:, 0] = ctr_x - widths * scale * 0.5
+    rescaled_boxes[:, 1] = ctr_y - heights * scale * 0.5
+    rescaled_boxes[:, 2] = ctr_x + widths * scale * 0.5
+    rescaled_boxes[:, 3] = ctr_y + heights * scale * 0.5
 
-    return rescaled_bboxes
+    return clip_boxes(rescaled_boxes, im_shape)
 
 def find_valid_ref_bboxes(bbox_proposals, im_shape, pivot_scale=1.0):
     """
     Return overlaps between pivot bboxes and all other bboxes
     """
-    pivot_bboxes = clip_boxes(scale_bboxes(bbox_proposals, pivot_scale), im_shape)
+    pivot_bboxes = scale_boxes(bbox_proposals, pivot_scale, im_shape)
     pivot_ref_overlaps = bbox_overlaps(
             np.ascontiguousarray(pivot_bboxes, dtype=np.float),
             np.ascontiguousarray(bbox_proposals, dtype=np.float))
