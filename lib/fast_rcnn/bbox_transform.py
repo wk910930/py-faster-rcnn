@@ -82,6 +82,7 @@ def scale_bboxes(bboxes, scale):
     Rescale bboxes according to the given scale
     WARNING: this function doesn't clip bboxes
     """
+    assert bboxes.dtype == np.float, 'bboxes must be np.float data type'
     if scale == 1.0:
         return bboxes.copy()
 
