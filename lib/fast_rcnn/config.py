@@ -163,6 +163,13 @@ __C.TEST.LR_FLIP = False
 # Save scoers and bbox to mat files (before NMS)
 __C.TEST.SAVE_MAT = False
 
+# Test using pairwise term
+__C.TEST.PAIRWISE_TERM: False
+
+# Weight for unary and pairwise term scores
+__C.TEST.UNARY_TERM_WEIGHT = 1.0
+__C.TEST.PAIRWISE_TERM_WEIGHT = 0.0
+
 # Cache raw all_boxes (i.e. before NMS)
 __C.TEST.CACHE_RAW_ABOXES = False
 
