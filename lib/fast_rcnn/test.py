@@ -315,7 +315,7 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
 
     output_dir = get_output_dir(imdb, net)
 
-    reasoning_net = caffe.Net('/home/kwang/py-faster-rcnn/models/reasoning/feat_reasoning_deploy.prototxt', '/home/kwang/py-faster-rcnn/models/reasoning/tmp_iter_30000.caffemodel', caffe.TEST)
+    reasoning_net = caffe.Net('/home/kwang/py-faster-rcnn/models/reasoning/deploy.prototxt', '/home/kwang/py-faster-rcnn/models/reasoning/models/tmp_iter_150000.caffemodel', caffe.TEST)
 
     # timers
     _t = {'im_detect' : Timer(), 'edge_reasoning' : Timer(), 'misc' : Timer()}
@@ -363,13 +363,13 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
         _t['im_detect'].toc()
 
         _t['edge_reasoning'].tic()
-        if True:
+        if cfg.TEST.PAIRWISE_TERM:
             pivot_scale = 2.0
             iou_thresh = 0.01
             alpha = 0.5
             assert num_boxes == global_pool.shape[0]
             pairwise_term_scores = pairwise_term(reasoning_net, box_proposals.astype(np.float), global_pool, pivot_scale, iou_thresh, im.shape)
-            scores = scores + alpha * pairwise_term_scores
+            scores = cfg.TEST.UNARY_TERM_WEIGHT * scores + cfg.TEST.PAIRWSE_TERM_WEIGHT * pairwise_term_scores
         _t['edge_reasoning'].toc()
 
         if cfg.TEST.SAVE_MAT:

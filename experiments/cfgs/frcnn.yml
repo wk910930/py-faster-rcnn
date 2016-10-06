@@ -7,6 +7,9 @@ TEST:
   PROPOSAL_METHOD: 'slide'
   BBOX_REG: true
   SCALES_TARGET: 224
+  PAIRWISE_TERM: False
+  UNARY_TERM_WEIGHT: 1.0
+  PAIRWISE_TERM_WEIGHT: 0.0
 
 EXP_DIR: experiemtns
 # The mapping from image coordinates to feature map coordinates might cause

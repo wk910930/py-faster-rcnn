@@ -164,7 +164,7 @@ __C.TEST.LR_FLIP = False
 __C.TEST.SAVE_MAT = False
 
 # Test using pairwise term
-__C.TEST.PAIRWISE_TERM: False
+__C.TEST.PAIRWISE_TERM = False
 
 # Weight for unary and pairwise term scores
 __C.TEST.UNARY_TERM_WEIGHT = 1.0
