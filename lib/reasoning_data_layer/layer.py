@@ -81,6 +81,11 @@ class BatchLoader(object):
         self.feat_length = params['feat_length']
         self.mat_root = params['mat_root']
         self.im_root = params['im_root']
+        self.fg_thresh = params['fg_thresh']
+        self.bg_thresh = params['bg_thresh']
+        self.fg_fraction = params['fg_fraction']
+        self.num_fg = int(self.num_edges * self.fg_fraction)
+        self.num_bg = self.num_edges - self.num_fg
         # get list of image indexes.
         list_file = params['split']
         self.indexlist = [line.rstrip('\n') for line in open(list_file)]
@@ -109,6 +114,12 @@ class BatchLoader(object):
         box_proposals = mat_dict['box_proposals'].astype(np.float)
         num_bbox = box_proposals.shape[0]
 
+        fg_indices = np.where(np.squeeze(mat_dict['overlap'].astype(np.float32)) >= self.fg_thresh)[0]
+        bg_indices = np.where(np.squeeze(mat_dict['overlap'].astype(np.float32)) < self.bg_thresh)[0]
+        num_fg = fg_indices.shape[0]
+        num_bg = bg_indices.shape[0]
+        assert (num_fg + num_bg) > 0, 'we need at least one sample'
+
         # configure
         pivot_scale = 2.0
         iou_thresh = 0.01
@@ -117,17 +128,32 @@ class BatchLoader(object):
 
         feat_blob = np.zeros((self.num_edges, self.feat_length, 1, 1), dtype=np.float32)
         label_blob = np.zeros((self.num_edges), dtype=np.float32)
-        for i in xrange(self.num_edges):
-            pivot_index = np.random.randint(num_bbox)
+
+        for i in xrange(num_fg):
+            pivot_index = fg_indices[np.random.randint(num_fg)]
             ref_indices = np.where(pivot_ref_overlaps[pivot_index, :] >= iou_thresh)[0]
             num_ref = ref_indices.shape[0]
             ref_index = ref_indices[np.random.randint(num_ref)]
             pivot_feat = mat_dict['global_pool'][[pivot_index], :]
             ref_feat = mat_dict['global_pool'][[ref_index], :]
             feat_concat = np.concatenate((pivot_feat, ref_feat), axis=1)
-            labels = mat_dict['class_index'][:, pivot_index]
+            labels = mat_dict['class_index'][0, pivot_index]
             feat_blob[i, :, :, :] = feat_concat
+            assert labels > 0, '[{}] wrong positive label'.format(labels)
             label_blob[i] = labels
+
+        for i in xrange(num_bg):
+            pivot_index = bg_indices[np.random.randint(num_bg)]
+            ref_indices = np.where(pivot_ref_overlaps[pivot_index, :] >= iou_thresh)[0]
+            num_ref = ref_indices.shape[0]
+            ref_index = ref_indices[np.random.randint(num_ref)]
+            pivot_feat = mat_dict['global_pool'][[pivot_index], :]
+            ref_feat = mat_dict['global_pool'][[ref_index], :]
+            feat_concat = np.concatenate((pivot_feat, ref_feat), axis=1)
+            labels = mat_dict['class_index'][0, pivot_index]
+            feat_blob[num_fg + i, :, :, :] = feat_concat
+            labels = 0
+            label_blob[num_fg + i] = labels
 
         self._cur += 1
         return feat_blob, label_blob
@@ -136,6 +162,6 @@ def check_params(params):
     """
     A utility function to check the parameters for the data layers.
     """
-    required = ['split', 'mat_root', 'im_root', 'num_images', 'num_edges', 'feat_length']
+    required = ['split', 'mat_root', 'im_root', 'num_images', 'num_edges', 'feat_length', 'fg_thresh', 'bg_thresh', 'fg_fraction']
     for item in required:
         assert item in params.keys(), 'Params must include {}'.format(item)
