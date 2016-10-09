@@ -112,13 +112,28 @@ class BatchLoader(object):
         im = mpimg.imread(os.path.join(self.im_root, img_file))
 
         box_proposals = mat_dict['box_proposals'].astype(np.float)
-        num_bbox = box_proposals.shape[0]
+        class_index = np.squeeze(mat_dict['class_index'])
+        overlap = np.squeeze(mat_dict['overlap'].astype(np.float32))
+        feats = mat_dict['global_pool'].astype(np.float32)
+        assert box_proposals.shape[0] == class_index.shape[0], 'num mismatch'
+        assert box_proposals.shape[0] == overlap.shape[0], 'num mismatch'
+        assert box_proposals.shape[0] == feats.shape[0], 'num mismatch'
 
-        fg_indices = np.where(np.squeeze(mat_dict['overlap'].astype(np.float32)) >= self.fg_thresh)[0]
-        bg_indices = np.where(np.squeeze(mat_dict['overlap'].astype(np.float32)) < self.bg_thresh)[0]
-        num_fg = fg_indices.shape[0]
-        num_bg = bg_indices.shape[0]
-        assert (num_fg + num_bg) > 0, 'we need at least one sample'
+        fg_indices = np.where(overlap >= self.fg_thresh)[0]
+        bg_indices = np.where(overlap < self.bg_thresh)[0]
+        assert (fg_indices.shape[0] + bg_indices.shape[0]) > 0, 'we need at least one sample'
+
+        if fg_indices.shape[0] == 0:
+            fg_num = 0
+            bg_num = self.num_edges
+        elif bg_indices.shape[0] == 0:
+            bg_num = 0
+            fg_num - self.num_edges
+        else:
+            fg_num = self.num_fg
+            bg_num = self.num_bg
+
+        assert fg_num + bg_num == self.num_edges
 
         # configure
         pivot_scale = 2.0
@@ -129,31 +144,26 @@ class BatchLoader(object):
         feat_blob = np.zeros((self.num_edges, self.feat_length, 1, 1), dtype=np.float32)
         label_blob = np.zeros((self.num_edges), dtype=np.float32)
 
-        for i in xrange(num_fg):
-            pivot_index = fg_indices[np.random.randint(num_fg)]
+        for i in xrange(fg_num):
+            pivot_index = np.random.choice(fg_indices, 1)
             ref_indices = np.where(pivot_ref_overlaps[pivot_index, :] >= iou_thresh)[0]
-            num_ref = ref_indices.shape[0]
-            ref_index = ref_indices[np.random.randint(num_ref)]
-            pivot_feat = mat_dict['global_pool'][[pivot_index], :]
-            ref_feat = mat_dict['global_pool'][[ref_index], :]
-            feat_concat = np.concatenate((pivot_feat, ref_feat), axis=1)
-            labels = mat_dict['class_index'][0, pivot_index]
-            feat_blob[i, :, :, :] = feat_concat
+            ref_index = np.random.choice(ref_indices, 1)
+            pivot_feat = feats[pivot_index, :]
+            ref_feat = feats[ref_index, :]
+            feat_blob[i, :, :, :] = np.concatenate((pivot_feat, ref_feat), axis=1)
+            labels = class_index[pivot_index]
             assert labels > 0, '[{}] wrong positive label'.format(labels)
             label_blob[i] = labels
 
-        for i in xrange(num_bg):
-            pivot_index = bg_indices[np.random.randint(num_bg)]
+        for i in xrange(bg_num):
+            pivot_index = np.random.choice(bg_indices, 1)
             ref_indices = np.where(pivot_ref_overlaps[pivot_index, :] >= iou_thresh)[0]
-            num_ref = ref_indices.shape[0]
-            ref_index = ref_indices[np.random.randint(num_ref)]
-            pivot_feat = mat_dict['global_pool'][[pivot_index], :]
-            ref_feat = mat_dict['global_pool'][[ref_index], :]
-            feat_concat = np.concatenate((pivot_feat, ref_feat), axis=1)
-            labels = mat_dict['class_index'][0, pivot_index]
-            feat_blob[num_fg + i, :, :, :] = feat_concat
+            ref_index = np.random.choice(ref_indices, 1)
+            pivot_feat = feats[pivot_index, :]
+            ref_feat = feats[ref_index, :]
+            feat_blob[fg_num + i, :, :, :] = np.concatenate((pivot_feat, ref_feat), axis=1)
             labels = 0
-            label_blob[num_fg + i] = labels
+            label_blob[fg_num + i] = labels
 
         self._cur += 1
         return feat_blob, label_blob
