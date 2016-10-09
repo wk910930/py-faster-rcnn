@@ -20,16 +20,24 @@ def parse_args():
                         help='GPU device id to use [0]',
                         default=0, type=int)
     parser.add_argument('--cpu', dest='cpu_mode',
-                        help='Use CPU mode (overrides --gpu)',
+                        help='use CPU mode (overrides --gpu)',
                         action='store_true')
     parser.add_argument('--solver', dest='solver',
                         help='solver file for training the network',
                         default=None, type=str)
     parser.add_argument('--cfg', dest='cfg_file',
-                        help='optional config file', default=None, type=str)
+                        help='optional config file',
+                        default=None, type=str)
     parser.add_argument('--rand', dest='randomize',
                         help='randomize (do not use a fixed seed)',
                         action='store_true')
+    restore = parser.add_mutually_exclusive_group()
+    restore.add_argument('--weights',
+                         help='initial point',
+                         default=None, type=str)
+    restore.add_argument('--snapshot',
+                         help='solverstate.',
+                         default=None, type=str)
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -66,6 +74,12 @@ if __name__ == '__main__':
     max_iter = solver_param.max_iter
 
     solver = caffe.SGDSolver(args.solver)
+    if args.snapshot:
+        print "Restoring history from {}".format(args.snapshot)
+        solver.restore(args.snapshot)
+    if args.weights:
+        print "Finetuning from {}".format(args.weights)
+        solver.net.copy_from(args.weights)
+
     solver.step(max_iter)
     print 'Optimization Done.'
-
