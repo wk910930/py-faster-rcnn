@@ -101,6 +101,7 @@ class BatchLoader(object):
         # Did we finish an epoch?
         if self._cur == len(self.indexlist):
             self._cur = 0
+        if self._cur == 0:
             shuffle(self.indexlist)
 
         # Load an image and mat
