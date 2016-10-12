@@ -297,8 +297,8 @@ def pairwise_term(reasoning_net, bbox_proposals, global_pool, pivot_scale, iou_t
         pivot_feats = np.tile(pivot_feat, (num_ref, 1, 1, 1))
         ref_feats = global_pool[ref_indices, :]
         feat_blob = np.concatenate((pivot_feats, ref_feats), axis=1)
-        pariwise_scores = edge_reasoning(reasoning_net, feat_blob)
-        pairwise_term_scores[pivot_index, :] = np.average(pariwise_scores, axis=0)
+        pairwise_scores = edge_reasoning(reasoning_net, feat_blob)
+        pairwise_term_scores[pivot_index, :] = np.average(pairwise_scores, axis=0)
     return pairwise_term_scores
 
 def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, vis=False):
