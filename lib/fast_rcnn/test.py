@@ -301,7 +301,7 @@ def pairwise_term(reasoning_net, bbox_proposals, global_pool, pivot_scale, iou_t
         pairwise_term_scores[pivot_index, :] = np.average(pairwise_scores, axis=0)
     return pairwise_term_scores
 
-def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, vis=False):
+def test_net(net, reasoning_net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, vis=False):
     """Test a Fast R-CNN network on an image database."""
     num_images = len(imdb.image_index)
     # all detections are collected into:
@@ -314,8 +314,6 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
                  for _ in xrange(imdb.num_classes)]
 
     output_dir = get_output_dir(imdb, net)
-
-    reasoning_net = caffe.Net('/home/kwang/py-faster-rcnn/models/reasoning/deploy.prototxt', '/home/kwang/py-faster-rcnn/models/reasoning/models/tmp_iter_250000.caffemodel', caffe.TEST)
 
     # timers
     _t = {'im_detect' : Timer(), 'edge_reasoning' : Timer(), 'misc' : Timer()}

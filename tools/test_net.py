@@ -65,6 +65,12 @@ def parse_args():
     parser.add_argument('--bbox_std', dest='bbox_std',
                         help='the std of bbox',
                         default=None, type=str)
+    parser.add_argument('--reasoning_def', dest='reasoning_prototxt',
+                        help='reasoning prototxt file defining the network',
+                        default=None, type=str)
+    parser.add_argument('--reasoning_net', dest='reasoning_caffemodel',
+                        help='reasoning model to test',
+                        default=None, type=str)
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -100,6 +106,8 @@ if __name__ == '__main__':
     net = caffe.Net(args.prototxt, args.caffemodel, caffe.TEST)
     net.name = os.path.splitext(os.path.basename(args.caffemodel))[0]
 
+    reasoning_net = caffe.Net(args.reasoning_prototxt, args.reasoning_caffemodel, caffe.TEST)
+
     if args.bbox_mean and args.bbox_std:
         # apply bbox regression normalization on the net weights
         with open(args.bbox_mean, 'rb') as f:
@@ -117,6 +125,6 @@ if __name__ == '__main__':
     if not cfg.TEST.HAS_RPN:
         imdb.set_proposal_method(cfg.TEST.PROPOSAL_METHOD)
 
-    test_net(net, imdb, max_per_image=args.max_per_image,
+    test_net(net, reasoning_net, imdb, max_per_image=args.max_per_image,
              boxes_num_per_batch=args.boxes_num_per_batch, vis=args.vis)
     print 'Done'
