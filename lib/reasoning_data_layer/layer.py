@@ -14,13 +14,14 @@ import matplotlib.image as mpimg
 
 import caffe
 from fast_rcnn.bbox_transform import find_valid_ref_bboxes
+from fast_rcnn.bbox_transform import bbox_transform
 
 class ReasoningDataLayer(caffe.Layer):
     """
     Data layer for training reasoning network
     """
     def setup(self, bottom, top):
-        self.top_names = ['feat', 'labels']
+        self.top_names = ['feat', 'spatial', 'scores', 'labels']
         # read input parameters
         # params is a python dictionary with layer parameters
         params = eval(self.param_str)
@@ -37,22 +38,30 @@ class ReasoningDataLayer(caffe.Layer):
         # since we use a fixed input image size, we can shape the data layer
         # once. Else, we'd have to do it in the reshape call.
         top[0].reshape(self.batch_size, self.feat_length, 1, 1)
-        top[1].reshape(self.batch_size)
+        top[1].reshape(self.batch_size, 4)
+        top[2].reshape(self.batch_size, 402)
+        top[3].reshape(self.batch_size)
 
     def forward(self, bottom, top):
         """
         Load data.
         """
         feat_blob = np.zeros((self.batch_size, self.feat_length, 1, 1), dtype=np.float32)
+        spatial_blob = np.zeros((self.batch_size, 4), dtype=np.float32)
+        scores_blob = np.zeros((self.batch_size, 402), dtype=np.float32)
         label_blob = np.zeros((self.batch_size), dtype=np.float32)
         for itt in range(self.num_images):
             # Use the batch loader to load the next image.
-            feat, label = self.batch_loader.load_next_image()
+            feat, spatial, scores, label = self.batch_loader.load_next_image()
             feat_blob[itt * self.num_edges: (itt + 1) * self.num_edges, :, :, :] = feat
+            spatial_blob[itt * self.num_edges: (itt + 1) * self.num_edges, :] = spatial
+            scores_blob[itt * self.num_edges: (itt + 1) * self.num_edges, :] = scores
             label_blob[itt * self.num_edges: (itt + 1) * self.num_edges] = label
         # Add directly to the caffe data layer
         top[0].data[...] = feat_blob
-        top[1].data[...] = label_blob
+        top[1].data[...] = spatial_blob
+        top[2].data[...] = scores_blob
+        top[3].data[...] = label_blob
 
     def reshape(self, bottom, top):
         """
@@ -108,6 +117,8 @@ class BatchLoader(object):
         index = self.indexlist[self._cur]  # Get the image index
         mat_file = index + '.mat'
         img_file = index + '.JPEG'
+        if 'flip' in img_file:
+            img_file = img_file[5:]
 
         mat_dict = sio.loadmat(os.path.join(self.mat_root, mat_file))
         im = mpimg.imread(os.path.join(self.im_root, img_file))
@@ -116,6 +127,7 @@ class BatchLoader(object):
         class_index = np.squeeze(mat_dict['class_index'])
         overlap = np.squeeze(mat_dict['overlap'].astype(np.float32))
         feats = mat_dict['global_pool'].astype(np.float32)
+        box_scores = mat_dict['scores'].astype(np.float32)
         assert box_proposals.shape[0] == class_index.shape[0], 'num mismatch'
         assert box_proposals.shape[0] == overlap.shape[0], 'num mismatch'
         assert box_proposals.shape[0] == feats.shape[0], 'num mismatch'
@@ -143,6 +155,8 @@ class BatchLoader(object):
         pivot_ref_overlaps = find_valid_ref_bboxes(box_proposals, im.shape, pivot_scale)
 
         feat_blob = np.zeros((self.num_edges, self.feat_length, 1, 1), dtype=np.float32)
+        spatial_blob = np.zeros((self.num_edges, 4), dtype=np.float32)
+        scores_blob = np.zeros((self.num_edges, 402), dtype=np.float32)
         label_blob = np.zeros((self.num_edges), dtype=np.float32)
 
         for i in xrange(fg_num):
@@ -152,9 +166,19 @@ class BatchLoader(object):
             pivot_feat = feats[pivot_index, :]
             ref_feat = feats[ref_index, :]
             feat_blob[i, :, :, :] = np.concatenate((pivot_feat, ref_feat), axis=1)
+            # label
             labels = class_index[pivot_index]
             assert labels > 0, '[{}] wrong positive label'.format(labels)
             label_blob[i] = labels
+            # spatial
+            pivot_bbox = box_proposals[pivot_index, :]
+            ref_bbox = box_proposals[ref_index, :]
+            target = bbox_transform(ref_bbox, pivot_bbox)[0, :]
+            spatial_blob[i, :] = target
+            # scores
+            pivot_score = box_scores[pivot_index, :]
+            ref_score = box_scores[ref_index, :]
+            scores_blob[i, :] = np.concatenate((pivot_score, ref_score), axis=1)
 
         for i in xrange(bg_num):
             pivot_index = np.random.choice(bg_indices, 1)
@@ -163,11 +187,21 @@ class BatchLoader(object):
             pivot_feat = feats[pivot_index, :]
             ref_feat = feats[ref_index, :]
             feat_blob[fg_num + i, :, :, :] = np.concatenate((pivot_feat, ref_feat), axis=1)
+            # label
             labels = 0
             label_blob[fg_num + i] = labels
+            # spatial
+            pivot_bbox = box_proposals[pivot_index, :]
+            ref_bbox = box_proposals[ref_index, :]
+            target = bbox_transform(ref_bbox, pivot_bbox)[0, :]
+            spatial_blob[i, :] = target
+            # scores
+            pivot_score = box_scores[pivot_index, :]
+            ref_score = box_scores[ref_index, :]
+            scores_blob[i, :] = np.concatenate((pivot_score, ref_score), axis=1)
 
         self._cur += 1
-        return feat_blob, label_blob
+        return feat_blob, spatial_blob, scores_blob, label_blob
 
 def check_params(params):
     """
