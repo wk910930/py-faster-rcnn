@@ -37,7 +37,7 @@ class ReasoningDataLayer(caffe.Layer):
         # reshape tops
         # since we use a fixed input image size, we can shape the data layer
         # once. Else, we'd have to do it in the reshape call.
-        top[0].reshape(self.batch_size, self.feat_length, 1, 1)
+        top[0].reshape(self.batch_size, self.feat_length)
         top[1].reshape(self.batch_size, 4)
         top[2].reshape(self.batch_size, 402)
         top[3].reshape(self.batch_size)
@@ -46,14 +46,14 @@ class ReasoningDataLayer(caffe.Layer):
         """
         Load data.
         """
-        feat_blob = np.zeros((self.batch_size, self.feat_length, 1, 1), dtype=np.float32)
+        feat_blob = np.zeros((self.batch_size, self.feat_length), dtype=np.float32)
         spatial_blob = np.zeros((self.batch_size, 4), dtype=np.float32)
         scores_blob = np.zeros((self.batch_size, 402), dtype=np.float32)
         label_blob = np.zeros((self.batch_size), dtype=np.float32)
         for itt in range(self.num_images):
             # Use the batch loader to load the next image.
             feat, spatial, scores, label = self.batch_loader.load_next_image()
-            feat_blob[itt * self.num_edges: (itt + 1) * self.num_edges, :, :, :] = feat
+            feat_blob[itt * self.num_edges: (itt + 1) * self.num_edges, :] = feat
             spatial_blob[itt * self.num_edges: (itt + 1) * self.num_edges, :] = spatial
             scores_blob[itt * self.num_edges: (itt + 1) * self.num_edges, :] = scores
             label_blob[itt * self.num_edges: (itt + 1) * self.num_edges] = label
@@ -154,7 +154,7 @@ class BatchLoader(object):
 
         pivot_ref_overlaps = find_valid_ref_bboxes(box_proposals, im.shape, pivot_scale)
 
-        feat_blob = np.zeros((self.num_edges, self.feat_length, 1, 1), dtype=np.float32)
+        feat_blob = np.zeros((self.num_edges, self.feat_length), dtype=np.float32)
         spatial_blob = np.zeros((self.num_edges, 4), dtype=np.float32)
         scores_blob = np.zeros((self.num_edges, 402), dtype=np.float32)
         label_blob = np.zeros((self.num_edges), dtype=np.float32)
@@ -163,9 +163,9 @@ class BatchLoader(object):
             pivot_index = np.random.choice(fg_indices, 1)
             ref_indices = np.where(pivot_ref_overlaps[pivot_index, :] >= iou_thresh)[0]
             ref_index = np.random.choice(ref_indices, 1)
-            pivot_feat = feats[pivot_index, :]
-            ref_feat = feats[ref_index, :]
-            feat_blob[i, :, :, :] = np.concatenate((pivot_feat, ref_feat), axis=1)
+            pivot_feat = np.squeeze(feats[pivot_index, :], axis=(2,3))
+            ref_feat = np.squeeze(feats[ref_index, :], axis=(2,3))
+            feat_blob[i, :] = np.concatenate((pivot_feat, ref_feat), axis=1)
             # label
             labels = class_index[pivot_index]
             assert labels > 0, '[{}] wrong positive label'.format(labels)
@@ -184,9 +184,9 @@ class BatchLoader(object):
             pivot_index = np.random.choice(bg_indices, 1)
             ref_indices = np.where(pivot_ref_overlaps[pivot_index, :] >= iou_thresh)[0]
             ref_index = np.random.choice(ref_indices, 1)
-            pivot_feat = feats[pivot_index, :]
-            ref_feat = feats[ref_index, :]
-            feat_blob[fg_num + i, :, :, :] = np.concatenate((pivot_feat, ref_feat), axis=1)
+            pivot_feat = np.squeeze(feats[pivot_index, :], axis=(2, 3))
+            ref_feat = np.squeeze(feats[ref_index, :], axis=(2, 3))
+            feat_blob[fg_num + i, :] = np.concatenate((pivot_feat, ref_feat), axis=1)
             # label
             labels = 0
             label_blob[fg_num + i] = labels
