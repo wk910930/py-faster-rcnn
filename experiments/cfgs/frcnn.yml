@@ -5,7 +5,7 @@ TEST:
   # IoU >= this threshold)
   NMS: 0.3
   PROPOSAL_METHOD: 'slide'
-  BBOX_REG: true
+  BBOX_REG: True
   SCALES_TARGET: 224
   PAIRWISE_TERM: True
   UNARY_TERM_WEIGHT: 0.0
