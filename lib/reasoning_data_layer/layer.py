@@ -160,45 +160,47 @@ class BatchLoader(object):
         label_blob = np.zeros((self.num_edges), dtype=np.float32)
 
         for i in xrange(fg_num):
-            pivot_index = np.random.choice(fg_indices, 1)
+            pivot_index = np.random.choice(fg_indices, 1)[0]
             ref_indices = np.where(pivot_ref_overlaps[pivot_index, :] >= iou_thresh)[0]
-            ref_index = np.random.choice(ref_indices, 1)
-            pivot_feat = np.squeeze(feats[pivot_index, :], axis=(2,3))
-            ref_feat = np.squeeze(feats[ref_index, :], axis=(2,3))
+            ref_index = np.random.choice(ref_indices, 1)[0]
+            # feat
+            pivot_feat = np.squeeze(feats[[pivot_index], :], axis=(2,3))
+            ref_feat = np.squeeze(feats[[ref_index], :], axis=(2,3))
             feat_blob[i, :] = np.concatenate((pivot_feat, ref_feat), axis=1)
+            # spatial
+            pivot_bbox = box_proposals[pivot_index, :]
+            ref_bbox = box_proposals[ref_index, :]
+            target = bbox_transform(ref_bbox[np.newaxis, :], pivot_bbox[np.newaxis, :])[0, :]
+            spatial_blob[i, :] = target
+            # scores
+            pivot_score = box_scores[pivot_index, :]
+            ref_score = box_scores[ref_index, :]
+            scores_blob[i, :] = np.concatenate((pivot_score, ref_score), axis=0)
             # label
             labels = class_index[pivot_index]
             assert labels > 0, '[{}] wrong positive label'.format(labels)
             label_blob[i] = labels
+
+        for i in xrange(bg_num):
+            pivot_index = np.random.choice(bg_indices, 1)[0]
+            ref_indices = np.where(pivot_ref_overlaps[pivot_index, :] >= iou_thresh)[0]
+            ref_index = np.random.choice(ref_indices, 1)[0]
+            # feat
+            pivot_feat = np.squeeze(feats[[pivot_index], :], axis=(2, 3))
+            ref_feat = np.squeeze(feats[[ref_index], :], axis=(2, 3))
+            feat_blob[fg_num + i, :] = np.concatenate((pivot_feat, ref_feat), axis=1)
             # spatial
             pivot_bbox = box_proposals[pivot_index, :]
             ref_bbox = box_proposals[ref_index, :]
-            target = bbox_transform(ref_bbox, pivot_bbox)[0, :]
-            spatial_blob[i, :] = target
+            target = bbox_transform(ref_bbox[np.newaxis, :], pivot_bbox[np.newaxis, :])[0, :]
+            spatial_blob[fg_num + i, :] = target
             # scores
             pivot_score = box_scores[pivot_index, :]
             ref_score = box_scores[ref_index, :]
-            scores_blob[i, :] = np.concatenate((pivot_score, ref_score), axis=1)
-
-        for i in xrange(bg_num):
-            pivot_index = np.random.choice(bg_indices, 1)
-            ref_indices = np.where(pivot_ref_overlaps[pivot_index, :] >= iou_thresh)[0]
-            ref_index = np.random.choice(ref_indices, 1)
-            pivot_feat = np.squeeze(feats[pivot_index, :], axis=(2, 3))
-            ref_feat = np.squeeze(feats[ref_index, :], axis=(2, 3))
-            feat_blob[fg_num + i, :] = np.concatenate((pivot_feat, ref_feat), axis=1)
+            scores_blob[fg_num + i, :] = np.concatenate((pivot_score, ref_score), axis=0)
             # label
             labels = 0
             label_blob[fg_num + i] = labels
-            # spatial
-            pivot_bbox = box_proposals[pivot_index, :]
-            ref_bbox = box_proposals[ref_index, :]
-            target = bbox_transform(ref_bbox, pivot_bbox)[0, :]
-            spatial_blob[i, :] = target
-            # scores
-            pivot_score = box_scores[pivot_index, :]
-            ref_score = box_scores[ref_index, :]
-            scores_blob[i, :] = np.concatenate((pivot_score, ref_score), axis=1)
 
         self._cur += 1
         return feat_blob, spatial_blob, scores_blob, label_blob
