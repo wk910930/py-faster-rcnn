@@ -136,12 +136,14 @@ class BatchLoader(object):
         bg_indices = np.where(overlap < self.bg_thresh)[0]
         assert (fg_indices.shape[0] + bg_indices.shape[0]) > 0, 'we need at least one sample'
 
+        fg_num = 0
+        bg_num = 0
         if fg_indices.shape[0] == 0:
             fg_num = 0
             bg_num = self.num_edges
         elif bg_indices.shape[0] == 0:
             bg_num = 0
-            fg_num - self.num_edges
+            fg_num = self.num_edges
         else:
             fg_num = self.num_fg
             bg_num = self.num_bg
