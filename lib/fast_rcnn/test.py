@@ -8,7 +8,7 @@
 """Test a Fast R-CNN network on an imdb (image database)."""
 
 from fast_rcnn.config import cfg, get_output_dir
-from fast_rcnn.bbox_transform import clip_boxes, bbox_transform_inv, bbox_voting
+from fast_rcnn.bbox_transform import clip_boxes, bbox_transform_inv, bbox_voting, bbox_transform
 import argparse
 import math
 from utils.timer import Timer
@@ -261,7 +261,7 @@ def scores_doping(scores, bbox_top_n=10):
     top_classes = np.unique(cls_inds[-bbox_top_n:])
     return top_classes
 
-def edge_reasoning(net, feat_blob):
+def edge_reasoning(net, feat_blob, spatial_blob, scores_blob):
     """Reasoning edge between proposals in an image
 
     Arguments:
@@ -275,10 +275,14 @@ def edge_reasoning(net, feat_blob):
 
     # reshape network inputs
     net.blobs['feat'].reshape(*(feat_blob.shape))
+    net.blobs['spatial'].reshape(*(spatial_blob.shape))
+    net.blobs['scores'].reshape(*(scores_blob.shape))
 
     # do forward
-    forward_kwargs = {'feat': None}
+    forward_kwargs = {'feat': None, 'spatial' : None, 'scores' : None}
     forward_kwargs['feat'] = feat_blob.astype(np.float32, copy=False)
+    forward_kwargs['spatial'] = spatial_blob.astype(np.float32, copy=False)
+    forward_kwargs['scores'] = scores_blob.astype(np.float32, copy=False)
     blobs_out = net.forward(**forward_kwargs)
 
     # use softmax estimated probabilities
@@ -286,18 +290,32 @@ def edge_reasoning(net, feat_blob):
 
     return scores
 
-def pairwise_term(reasoning_net, bbox_proposals, global_pool, pivot_scale, iou_thresh, im_shape):
+def pairwise_term(reasoning_net, bbox_proposals, global_pool, scores, pivot_scale, iou_thresh, im_shape):
     num_bbox = bbox_proposals.shape[0]
-    pairwise_term_scores = np.zeros((num_bbox, 201))
-    pivot_ref_overlaps = find_valid_ref_bboxes(bbox_proposals, im_shape, pivot_scale)
+    pairwise_term_scores = np.zeros((num_bbox, 201), dtype=np.float32)
+    pivot_ref_overlaps = find_valid_ref_bboxes(bbox_proposals.astype(np.float64), im_shape, pivot_scale)
     for pivot_index in xrange(num_bbox):
         ref_indices = np.where(pivot_ref_overlaps[pivot_index, :] >= iou_thresh)[0]
         num_ref = ref_indices.shape[0]
-        pivot_feat = global_pool[[pivot_index], :]
-        pivot_feats = np.tile(pivot_feat, (num_ref, 1, 1, 1))
-        ref_feats = global_pool[ref_indices, :]
+        assert num_ref >= 1
+        # feat
+        pivot_feat = np.squeeze(global_pool[[pivot_index], :], axis=(2, 3))
+        pivot_feats = np.tile(pivot_feat, (num_ref, 1))
+        ref_feats = np.squeeze(global_pool[ref_indices, :], axis=(2, 3))
         feat_blob = np.concatenate((pivot_feats, ref_feats), axis=1)
-        pairwise_scores = edge_reasoning(reasoning_net, feat_blob)
+        # spatial
+        pivot_box = bbox_proposals[[pivot_index], :]
+        pivot_boxes = np.tile(pivot_box, (num_ref, 1))
+        ref_boxes = bbox_proposals[ref_indices, :]
+        spatial_blob = bbox_transform(ref_boxes, pivot_boxes)
+        # scores
+        pivot_score = scores[[pivot_index], :]
+        pivot_scores = np.tile(pivot_score, (num_ref, 1))
+        ref_scores = scores[ref_indices, :]
+        scores_blob = np.concatenate((pivot_scores, ref_scores), axis=1)
+        # reasoning
+        pairwise_scores = edge_reasoning(reasoning_net, feat_blob, spatial_blob, scores_blob)
+        assert pairwise_scores.shape[0] == num_ref
         pairwise_term_scores[pivot_index, :] = np.average(pairwise_scores, axis=0)
     return pairwise_term_scores
 
@@ -364,9 +382,8 @@ def test_net(net, reasoning_net, imdb, max_per_image=100, thresh=0.05, boxes_num
         if cfg.TEST.PAIRWISE_TERM:
             pivot_scale = 2.0
             iou_thresh = 0.01
-            alpha = 0.5
-            assert num_boxes == global_pool.shape[0]
-            pairwise_term_scores = pairwise_term(reasoning_net, box_proposals.astype(np.float), global_pool, pivot_scale, iou_thresh, im.shape)
+            pairwise_term_scores = pairwise_term(reasoning_net, box_proposals, global_pool, scores, pivot_scale, iou_thresh, im.shape)
+            assert scores.shape == pairwise_term_scores.shape
             scores = cfg.TEST.UNARY_TERM_WEIGHT * scores + cfg.TEST.PAIRWISE_TERM_WEIGHT * pairwise_term_scores
         _t['edge_reasoning'].toc()
 
