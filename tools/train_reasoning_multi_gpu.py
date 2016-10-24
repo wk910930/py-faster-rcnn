@@ -90,5 +90,5 @@ if __name__ == '__main__':
         print "Finetuning from {}".format(args.weights)
         solver.net.copy_from(args.weights)
 
-    solver.step(max_iter)
+    solver.step(max_iter - solver.iter)
     print 'Optimization Done.'
