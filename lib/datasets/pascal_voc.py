@@ -6,6 +6,8 @@
 # --------------------------------------------------------
 
 import os
+import os.path as osp
+
 from datasets.imdb import imdb
 import datasets.ds_utils as ds_utils
 import xml.etree.ElementTree as ET
@@ -47,6 +49,7 @@ class pascal_voc(imdb):
                        'use_diff'    : False,
                        'matlab_eval' : False,
                        'rpn_file'    : None,
+                       'top_k'       : 2000,
                        'min_size'    : 2}
 
         assert os.path.exists(self._devkit_path), \
@@ -148,6 +151,60 @@ class pascal_voc(imdb):
             roidb = self._load_rpn_roidb(None)
 
         return roidb
+
+    def _get_box_file(self, index):
+        file_name = index + '.mat'
+        return osp.join(self._image_set, file_name)
+
+    def custom_roidb(self):
+        method = 'custom'
+        top_k = self.config['top_k']
+        cache_file = osp.join(self.cache_path, self.name +
+                              '_{:s}_top{:d}'.format(method, top_k) +
+                              '_roidb.pkl')
+
+        if os.path.exists(cache_file):
+            with open(cache_file, 'rb') as fid:
+                roidb = cPickle.load(fid)
+            print '{:s} {:s} roidb loaded from {:s}'.format(self.name, method,
+                                                            cache_file)
+            return roidb
+
+        if int(self._year) == 2007 or self._image_set != 'test':
+            gt_roidb = self.gt_roidb()
+            custom_roidb = self._load_custom_roidb(gt_roidb)
+            roidb = imdb.merge_roidbs(gt_roidb, custom_roidb)
+        else:
+            roidb = self._load_suctom_roidb(None)
+        with open(cache_file, 'wb') as fid:
+            cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
+        print 'wrote {:s} roidb to {:s}'.format(method, cache_file)
+
+        return roidb
+
+    def _load_custom_roidb(self, gt_roidb):
+        box_list = []
+        top_k = self.config['top_k']
+
+        print 'Loading custom boxes'
+        for i, index in enumerate(self._image_index):
+            if i % 1000 == 0:
+                print '{:d} / {:d}'.format(i + 1, len(self._image_index))
+
+            box_file = osp.join(
+                cfg.DATA_DIR, 'pascal_voc_proposals', 'VOC' + self._year, 'custom', 'mat',
+                self._get_box_file(index))
+
+            raw_data = sio.loadmat(box_file)['boxes']
+            boxes = np.maximum(raw_data[:, 0:4] - 1, 0).astype(np.uint16)
+            # Remove duplicate boxes and very small boxes and then take top k
+            keep = ds_utils.unique_boxes(boxes)
+            boxes = boxes[keep, :]
+            keep = ds_utils.filter_small_boxes(boxes, self.config['min_size'])
+            boxes = boxes[keep, :]
+            boxes = boxes[:top_k, :]
+            box_list.append(boxes)
+        return self.create_roidb_from_box_list(box_list, gt_roidb)
 
     def _load_rpn_roidb(self, gt_roidb):
         filename = self.config['rpn_file']

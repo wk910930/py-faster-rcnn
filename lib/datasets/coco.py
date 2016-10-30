@@ -129,8 +129,8 @@ class coco(imdb):
     def mcg_roidb(self):
         return self._roidb_from_proposals('MCG')
 
-    def custome_roidb(self):
-        return self._roidb_from_proposals('custome')
+    def custom_roidb(self):
+        return self._roidb_from_proposals('custom')
 
     def _roidb_from_proposals(self, method):
         """
@@ -178,7 +178,7 @@ class coco(imdb):
             'selective_search',
             'edge_boxes_AR',
             'edge_boxes_70',
-            'custome']
+            'custom']
         assert method in valid_methods
 
         print 'Loading {} boxes'.format(method)
@@ -195,6 +195,8 @@ class coco(imdb):
             if method == 'MCG':
                 # Boxes from the MCG website are in (y1, x1, y2, x2) order
                 boxes = boxes[:, (1, 0, 3, 2)]
+            if method == 'custom':
+                boxes = boxes[:, 0:4]
             # Remove duplicate boxes and very small boxes and then take top k
             keep = ds_utils.unique_boxes(boxes)
             boxes = boxes[keep, :]
