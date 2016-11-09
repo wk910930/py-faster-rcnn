@@ -80,7 +80,7 @@ class coco(imdb):
                            else coco_name)
         # Dataset splits that have ground-truth annotations (test splits
         # do not have gt annotations)
-        self._gt_splits = ('train', 'val', 'minival')
+        self._gt_splits = ('train', 'val', 'minival', 'valminusminival')
 
     def _get_ann_file(self):
         prefix = 'instances' if self._image_set.find('test') == -1 \
