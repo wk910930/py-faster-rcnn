@@ -345,7 +345,6 @@ class coco(imdb):
             dets = boxes[im_ind].astype(np.float)
             if dets == []:
                 continue
-
             scores = dets[:, -1]
             xs = dets[:, 0]
             ys = dets[:, 1]
