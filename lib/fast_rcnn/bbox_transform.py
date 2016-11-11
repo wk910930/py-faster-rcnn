@@ -112,7 +112,7 @@ def find_valid_ref_bboxes(bbox_proposals, im_shape, pivot_scale=1.0):
 
 def bbox_voting(cls_dets_after_nms, cls_dets, threshold):
     """
-    A nice trick to improve performance durning TESTING.
+    A nice trick to improve performance during TESTING.
     Check 'Object detection via a multi-region & semantic segmentation-aware CNN model' for details.
     """
     overlaps = bbox_overlaps(
