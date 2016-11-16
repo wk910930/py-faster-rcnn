@@ -5,7 +5,6 @@
 # Written by Ross Girshick and Sean Bell
 # --------------------------------------------------------
 
-import os
 import caffe
 import yaml
 from fast_rcnn.config import cfg
@@ -126,7 +125,7 @@ class AnchorTargetLayer(caffe.Layer):
         if DEBUG:
             print 'anchors.shape', anchors.shape
 
-        # label: 1 is positive, 0 is negative, -1 is dont care
+        # label: 1 is positive, 0 is negative, -1 is ignored
         labels = np.empty((len(inds_inside), ), dtype=np.float32)
         labels.fill(-1)
 
