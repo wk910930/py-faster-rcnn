@@ -29,7 +29,8 @@ class ProposalLayer(caffe.Layer):
         anchor_base_size = layer_params.get('base_size', 16)
         anchor_ratios = layer_params.get('ratios', (0.5, 1, 2))
         anchor_scales = layer_params.get('scales', (8, 16, 32))
-        self._anchors = generate_anchors(base_size=anchor_base_size, ratios=np.array(anchor_ratios), scales=np.array(anchor_scales))
+        self._anchors = generate_anchors(base_size=anchor_base_size, \
+            ratios=np.array(anchor_ratios), scales=np.array(anchor_scales))
         self._num_anchors = self._anchors.shape[0]
 
         if DEBUG:
@@ -60,14 +61,13 @@ class ProposalLayer(caffe.Layer):
         # take after_nms_topN proposals after NMS
         # return the top proposals (-> RoIs top, scores top)
 
-        assert bottom[0].data.shape[0] == 1, \
-            'Only single item batches are supported'
+        assert bottom[0].data.shape[0] == 1, 'Only single item batches are supported'
 
         cfg_key = str(self.phase) # either 'TRAIN' or 'TEST'
-        pre_nms_topN  = cfg[cfg_key].RPN_PRE_NMS_TOP_N
+        pre_nms_topN = cfg[cfg_key].RPN_PRE_NMS_TOP_N
         post_nms_topN = cfg[cfg_key].RPN_POST_NMS_TOP_N
-        nms_thresh    = cfg[cfg_key].RPN_NMS_THRESH
-        min_size      = cfg[cfg_key].RPN_MIN_SIZE
+        nms_thresh = cfg[cfg_key].RPN_NMS_THRESH
+        min_size = cfg[cfg_key].RPN_MIN_SIZE
 
         # the first set of _num_anchors channels are bg probs
         # the second set are the fg probs, which we want
@@ -89,8 +89,8 @@ class ProposalLayer(caffe.Layer):
         shift_x = np.arange(0, width) * self._feat_stride
         shift_y = np.arange(0, height) * self._feat_stride
         shift_x, shift_y = np.meshgrid(shift_x, shift_y)
-        shifts = np.vstack((shift_x.ravel(), shift_y.ravel(),
-                            shift_x.ravel(), shift_y.ravel())).transpose()
+        shifts = np.vstack((shift_x.ravel(), shift_y.ravel(), \
+            shift_x.ravel(), shift_y.ravel())).transpose()
 
         # Enumerate all shifted anchors:
         #
@@ -100,8 +100,7 @@ class ProposalLayer(caffe.Layer):
         # reshape to (K*A, 4) shifted anchors
         A = self._num_anchors
         K = shifts.shape[0]
-        anchors = self._anchors.reshape((1, A, 4)) + \
-                  shifts.reshape((1, K, 4)).transpose((1, 0, 2))
+        anchors = self._anchors.reshape((1, A, 4)) + shifts.reshape((1, K, 4)).transpose((1, 0, 2))
         anchors = anchors.reshape((K * A, 4))
 
         # Transpose and reshape predicted bbox transformations to get them
