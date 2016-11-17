@@ -74,6 +74,7 @@ class ProposalLayer(caffe.Layer):
         scores = bottom[0].data[:, self._num_anchors:, :, :]
         bbox_deltas = bottom[1].data
         im_info = bottom[2].data[0, :]
+        assert np.all(im_info) > cfg.EPS, 'Invalid im_info: ({}, {}, {})'.format(im_info[0], im_info[1], im_info[2])
 
         if DEBUG:
             print 'im_size: ({}, {})'.format(im_info[0], im_info[1])
