@@ -127,7 +127,7 @@ class RoIDataLayer(caffe.Layer):
                 idx += 1
 
                 # bbox_inside_weights blob: At most 4 targets per roi are active;
-                # thisbinary vector sepcifies the subset of active targets
+                # this binary vector specifies the subset of active targets
                 top[idx].reshape(1, self._num_classes * 4)
                 self._name_to_top_map['bbox_inside_weights'] = idx
                 idx += 1
