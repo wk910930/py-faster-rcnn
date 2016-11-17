@@ -160,7 +160,7 @@ __C.TEST.BBOX_VOTE_THRESH= 0.5
 # Test using left-right flipping
 __C.TEST.LR_FLIP = False
 
-# Save scoers and bbox to mat files (before NMS)
+# Save scores and bbox to mat files (before NMS)
 __C.TEST.SAVE_MAT = False
 
 # Cache raw all_boxes (i.e. before NMS)
