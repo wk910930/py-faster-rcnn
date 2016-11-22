@@ -93,7 +93,7 @@ def demo(net, image_name):
         cls_scores = scores[:, cls_ind]
         dets = np.hstack((cls_boxes,
                           cls_scores[:, np.newaxis])).astype(np.float32)
-        keep = nms(dets, NMS_THRESH)
+        keep = nms(dets, NMS_THRESH, force_cpu=True)
         dets = dets[keep, :]
         vis_detections(im, cls, dets, thresh=CONF_THRESH)
 
