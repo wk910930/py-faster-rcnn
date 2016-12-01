@@ -25,7 +25,7 @@ class ProposalLayer(caffe.Layer):
         # parse the layer parameter string, which must be valid YAML
         layer_params = yaml.load(self.param_str_)
 
-        self._feat_stride = layer_params['feat_stride']
+        self._feat_stride = layer_params.get('feat_stride', 16)
         anchor_base_size = layer_params.get('base_size', 16)
         anchor_ratios = layer_params.get('ratios', (0.5, 1, 2))
         anchor_scales = layer_params.get('scales', (8, 16, 32))
