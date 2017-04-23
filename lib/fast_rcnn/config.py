@@ -144,6 +144,15 @@ __C.TEST.SCALES_TARGET = 224
 # IoU >= this threshold)
 __C.TEST.NMS = 0.3
 
+# Test using soft-NMS
+__C.TEST.SOFT_NMS = False
+
+# Flag for soft-NMS method.
+# 0 performs standard NMS
+# 1 performs soft-NMS with linear weighting
+# 2 performs soft-NMS with Gaussian weighting
+__C.TEST.SOFT_NMS_METHOD = 1
+
 # Experimental: treat the (K+1) units in the cls_score layer as linear
 # predictors (trained, eg, with one-vs-rest SVMs).
 __C.TEST.SVM = False

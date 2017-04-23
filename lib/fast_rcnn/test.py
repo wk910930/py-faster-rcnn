@@ -15,7 +15,7 @@ from utils.timer import Timer
 import numpy as np
 import cv2
 import caffe
-from fast_rcnn.nms_wrapper import nms
+from fast_rcnn.nms_wrapper import nms, soft_nms
 import cPickle
 from utils.blob import im_list_to_blob, im_list_to_fixed_spatial_blob
 import os
@@ -382,7 +382,10 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
             cls_dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])) \
                 .astype(np.float32, copy=False)
             raw_all_boxes[j][i] = cls_dets
-            keep = nms(cls_dets, cfg.TEST.NMS)
+            if cfg.TEST.SOFT_NMS:
+                keep = soft_nms(cls_dets, method=cfg.TEST.SOFT_NMS_METHOD)
+            else:
+                keep = nms(cls_dets, cfg.TEST.NMS)
             if cfg.TEST.BBOX_VOTE:
                 cls_dets_after_nms = cls_dets[keep, :]
                 cls_dets = bbox_voting(cls_dets_after_nms, cls_dets, threshold=cfg.TEST.BBOX_VOTE_THRESH)
