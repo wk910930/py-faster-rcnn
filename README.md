@@ -1,4 +1,4 @@
-#### This project is built on [py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn). Many thanks to [Ross Girshick](https://github.com/rbgirshick) great works!
+#### This project is built on [py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn). Many thanks to [Ross Girshick](https://github.com/rbgirshick)'s great works!
 
 ### Disclaimer
 
