@@ -9,6 +9,7 @@ TEST:
   SCALES_TARGET: 224
   BBOX_VOTE: False
   LR_FLIP: False
+  SOFT_NMS: False
 
 EXP_DIR: experiemtns
 # The mapping from image coordinates to feature map coordinates might cause
