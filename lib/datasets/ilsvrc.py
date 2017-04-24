@@ -21,7 +21,7 @@ class ilsvrc(imdb):
     def __init__(self, image_set, year, devkit_path=None):
         imdb.__init__(self, 'ilsvrc_' + year + '_' + image_set)
         # ILSVRC specific config options
-        self.config = {'top_k' : 2000,
+        self.config = {'top_k' : 300,
                        'use_salt' : True,
                        'cleanup' : True,
                        'min_size' : 2}

@@ -49,7 +49,7 @@ class pascal_voc(imdb):
                        'use_diff'    : False,
                        'matlab_eval' : False,
                        'rpn_file'    : None,
-                       'top_k'       : 2000,
+                       'top_k'       : 300,
                        'min_size'    : 2}
 
         assert os.path.exists(self._devkit_path), \
