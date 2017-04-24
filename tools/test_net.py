@@ -56,6 +56,9 @@ def parse_args():
     parser.add_argument('--num_dets', dest='max_per_image',
                         help='max number of detections per image',
                         default=100, type=int)
+    parser.add_argument('--thresh', dest='thresh',
+                        help='bbox with score greater than thresh will be kept',
+                        default=0.05, type=float)
     parser.add_argument('--num_per_batch', dest='boxes_num_per_batch',
                         help='split boxes to batches',
                         default=0, type=int)
@@ -118,5 +121,6 @@ if __name__ == '__main__':
         imdb.set_proposal_method(cfg.TEST.PROPOSAL_METHOD)
 
     test_net(net, imdb, max_per_image=args.max_per_image,
-             boxes_num_per_batch=args.boxes_num_per_batch, vis=args.vis)
+             boxes_num_per_batch=args.boxes_num_per_batch,
+             thresh=args.thresh, vis=args.vis)
     print 'Done'
