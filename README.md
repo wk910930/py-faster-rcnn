@@ -1,5 +1,7 @@
 #### This project is built on [py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn). Many thanks to [Ross Girshick](https://github.com/rbgirshick)'s great works!
 
+[Here](http://blog.csdn.net/jiajunlee/article/details/50373815) (Chinese Version Only) supplies the solution to some common issues when build & deploy the project. Think you [leejiajun](https://github.com/leejiajun)!
+
 ### Disclaimer
 
 The official Faster R-CNN code (written in MATLAB) is available [here](https://github.com/ShaoqingRen/faster_rcnn).
