@@ -49,10 +49,20 @@ if __name__ == '__main__':
     output_dir = os.path.join(base_dir, 'collect_and_eval')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    all_boxes = []
+
+    num_images = len(imdb.image_index)
+    all_boxes = [[[] for _ in xrange(num_images)]
+                 for _ in xrange(imdb.num_classes)]
+
     for abox_name in args.aboxes:
         with open(abox_name) as f:
-            all_boxes += cPickle.load(f)
+            tmp = cPickle.load(f)
+            for im_ind, index in enumerate(imdb.image_index):
+                for cls_ind, cls in enumerate(imdb.classes):
+                   dets = tmp[cls_ind][im_ind]
+                   if dets == []:
+                       continue
+                   all_boxes[cls_ind][im_ind] = dets
 
     print 'Evaluating...'
     imdb.evaluate_detections(all_boxes, output_dir)
