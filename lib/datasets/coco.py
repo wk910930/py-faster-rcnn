@@ -342,9 +342,13 @@ class coco(imdb):
     def _coco_results_one_category(self, boxes, cat_id):
         results = []
         for im_ind, index in enumerate(self.image_index):
-            dets = boxes[im_ind].astype(np.float)
+            # Notice: dets is either an ndarray (when there is something detected)
+            # or an empty list (when there is nothing detected).
+            dets = boxes[im_ind]
             if dets == []:
                 continue
+            # The following astype() is necessary for serializing JSON.
+            dets = dets.astype(np.float)
             scores = dets[:, -1]
             xs = dets[:, 0]
             ys = dets[:, 1]
