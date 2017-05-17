@@ -389,6 +389,7 @@ class coco(imdb):
             self._do_detection_eval(res_file, output_dir)
         # Optionally cleanup results json file
         if self.config['cleanup']:
+            print 'Cleaning up {}'.format(res_file)
             os.remove(res_file)
 
     def competition_mode(self, on):

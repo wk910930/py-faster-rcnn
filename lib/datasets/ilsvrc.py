@@ -279,6 +279,7 @@ class ilsvrc(imdb):
         self._write_ilsvrc_results_file(all_boxes, res_file)
         # Optionally cleanup results txt file
         if self.config['cleanup']:
+            print 'Cleaning up {}'.format(res_file)
             os.remove(res_file)
 
     def competition_mode(self, on):
