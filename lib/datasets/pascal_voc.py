@@ -67,8 +67,13 @@ class pascal_voc(imdb):
         """
         Construct an image path from the image's "index" identifier.
         """
-        image_path = os.path.join(self._data_path, 'JPEGImages',
-                                  index + self._image_ext)
+        if self._year == "0712":
+            year, file_index = index.split("/")
+            image_path = os.path.join(self._data_path+"/../" , 'VOC' + year ,'JPEGImages',
+                                      file_index + self._image_ext)
+        else:
+            image_path = os.path.join(self._data_path, 'JPEGImages',
+                                      index + self._image_ext)
         assert os.path.exists(image_path), \
                 'Path does not exist: {}'.format(image_path)
         return image_path
@@ -239,7 +244,12 @@ class pascal_voc(imdb):
         Load image and bounding boxes info from XML file in the PASCAL VOC
         format.
         """
-        filename = os.path.join(self._data_path, 'Annotations', index + '.xml')
+        if self._year == "0712":
+            year, file_index = index.split("/")
+            filename = os.path.join(self._data_path+"/../", 'VOC' + year , 'Annotations', file_index + '.xml')
+        else:
+            filename = os.path.join(self._data_path, 'Annotations', index + '.xml')
+
         tree = ET.parse(filename)
         objs = tree.findall('object')
         if not self.config['use_diff']:
