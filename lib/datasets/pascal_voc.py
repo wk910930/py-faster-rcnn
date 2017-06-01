@@ -297,13 +297,11 @@ class pascal_voc(imdb):
 
     def _get_voc_results_file_template(self):
         # VOCdevkit/results/VOC2007/Main/<comp_id>_det_test_aeroplane.txt
+        output_dir = os.path.join(self._devkit_path, 'results', 'VOC' + self._year, 'Main')
+        if not os.path.isdir(output_dir):
+            os.mkdir(output_dir)
         filename = self._get_comp_id() + '_det_' + self._image_set + '_{:s}.txt'
-        path = os.path.join(
-            self._devkit_path,
-            'results',
-            'VOC' + self._year,
-            'Main',
-            filename)
+        path = os.path.join(output_dir, filename)
         return path
 
     def _write_voc_results_file(self, all_boxes):
