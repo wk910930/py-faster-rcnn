@@ -339,10 +339,10 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, boxes_num_per_batch=0, v
             # ground truth.
             box_proposals = roidb[i]['boxes'][roidb[i]['gt_classes'] == 0]
 
-        num_boxes = box_proposals.shape[0]
-        if num_boxes < 1:
-            print 'Oops, {} does not have any bbox!'.format(imdb.image_path_at(i))
-            continue
+            num_boxes = box_proposals.shape[0]
+            if num_boxes < 1:
+                print 'Oops, {} does not have any bbox!'.format(imdb.image_path_at(i))
+                continue
 
         im = cv2.imread(imdb.image_path_at(i))
         _t['im_detect'].tic()
