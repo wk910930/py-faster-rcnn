@@ -108,55 +108,6 @@ def _get_blobs(im, rois):
         blobs['rois'] = _get_rois_blob(rois, im_scale_factors)
     return blobs, im_scale_factors
 
-def im_detect_split(net, im, boxes):
-    """Detect object classes in an image given object proposals.
-
-    Arguments:
-        net (caffe.Net): Fast R-CNN network to use
-        im (ndarray): color image to test (in BGR order)
-        boxes (ndarray): R x 4 array of object proposals or None (for RPN)
-
-    Returns:
-        scores (ndarray): R x K array of object class scores (K includes
-            background as object category 0)
-        boxes (ndarray): R x (4*K) array of predicted bounding boxes
-    """
-    blobs_all, im_scales = _get_blobs(im, boxes)
-    num_boxes = boxes.shape[0]
-    scores = np.zeros((num_boxes, 201), dtype=np.float32)
-    box_deltas = np.zeros((num_boxes, 4*201), dtype=np.float32)
-    for i in xrange(blobs_all['data'].shape[0]):
-        # load blobs
-        inds = np.where(blobs_all['rois'][:, 0] == i)[0]
-        if inds.shape[0] == 0:
-            continue
-        blobs = {'data' : None, 'rois' : None}
-        blobs['data'] = blobs_all['data'][[i]]
-        blobs['rois'] = blobs_all['rois'][inds]
-        blobs['rois'][:, 0] = 0
-
-        # reshape network inputs
-        net.blobs['data'].reshape(*(blobs['data'].shape))
-        net.blobs['rois'].reshape(*(blobs['rois'].shape))
-
-        # do forward
-        forward_kwargs = {'data': blobs['data'].astype(np.float32, copy=False)}
-        forward_kwargs['rois'] = blobs['rois'].astype(np.float32, copy=False)
-        blobs_out = net.forward(**forward_kwargs)
-
-        # use softmax estimated probabilities
-        score = blobs_out['cls_prob']
-        scores[inds] = score
-
-        box_delta = blobs_out['bbox_pred']
-        box_deltas[inds] = box_delta
-
-    # Apply bounding-box regression deltas
-    pred_boxes = bbox_transform_inv(boxes, box_deltas)
-    pred_boxes = clip_boxes(pred_boxes, im.shape)
-
-    return scores, pred_boxes
-
 def im_detect(net, im, boxes=None):
     """Detect object classes in an image given object proposals.
 
