@@ -53,8 +53,10 @@ def _get_image_blob(im):
         processed_ims.append(im)
 
     # Create a blob to hold the input images
-    # blob = im_list_to_blob(processed_ims)
-    blob = im_list_to_fixed_spatial_blob(processed_ims, cfg.TEST.MAX_SIZE, cfg.TEST.MAX_SIZE)
+    blob = im_list_to_blob(processed_ims)
+    # Notice: im_list_to_fixed_spatial_blob() is necessary to the networks which are sensitive to
+    #   input size, e.g. Inception.
+    # blob = im_list_to_fixed_spatial_blob(processed_ims, cfg.TEST.MAX_SIZE, cfg.TEST.MAX_SIZE)
 
     return blob, np.array(im_scale_factors)
 
