@@ -538,6 +538,8 @@ layer {
   type: "ROIPooling"
   bottom: "conv5_3"
   bottom: "rois"
+  propagate_down: true
+  propagate_down: false
   top: "pool5"
   roi_pooling_param {
     pooled_w: 7
