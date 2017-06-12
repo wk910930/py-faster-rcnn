@@ -4,6 +4,7 @@ fast_rcnn_models*
 VOCdevkit*
 ILSVRCdevkit*
 pascal_voc_proposals
+coco
 coco_proposals
 ilsvrc_proposals
 cache
