@@ -10,6 +10,7 @@
 __sets = {}
 
 from datasets.pascal_voc import pascal_voc
+from datasets.adas import adas
 from datasets.coco import coco
 from datasets.ilsvrc import ilsvrc
 import numpy as np
@@ -19,6 +20,14 @@ for year in ['2007', '2012', '0712']:
     for split in ['train', 'val', 'trainval', 'test']:
         name = 'voc_{}_{}'.format(year, split)
         __sets[name] = (lambda split=split, year=year: pascal_voc(split, year))
+
+# Set up adas_<year>_<split>
+# Notice: Actually the year here means dataset version number, which is different from
+# pascal_voc and coco. We do this just for consistency.
+for year in ['01']:
+    for split in ['train', 'train_half', 'train_quarter', 'val']:
+        name = 'adas_{}_{}'.format(year, split)
+        __sets[name] = (lambda split=split, year=year: adas(split, year))
 
 # Set up coco_2014_<split>
 for year in ['2014']:
