@@ -28,6 +28,11 @@ case $DATASET in
     TEST_IMDB="voc_2007_test"
     PT_DIR="pascal_voc"
     ITERS=70000
+    # Uncomment the followings to train on voc_2007 and voc_2012
+    # TRAIN_IMDB="voc_0712_trainval"
+    # TEST_IMDB="voc_2007_test"
+    # PT_DIR="pascal_voc"
+    # ITERS=100000
     ;;
   coco)
     # This is a very long and slow training schedule
