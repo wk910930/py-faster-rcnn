@@ -144,6 +144,12 @@ def voc_eval(detpath,
 
     # sort by confidence
     sorted_ind = np.argsort(-confidence)
+    if (len(sorted_ind)<1):
+        rec = 0.0
+        prec = 0.0
+        ap = 0.0
+        print '[WARNING] There are not detection results!'
+        return rec, prec, ap
     sorted_scores = np.sort(-confidence)
     BB = BB[sorted_ind, :]
     image_ids = [image_ids[x] for x in sorted_ind]
