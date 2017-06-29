@@ -1,5 +1,6 @@
 selective_search*
 imagenet_models*
+mnc_model
 fast_rcnn_models*
 VOCdevkit*
 ILSVRCdevkit*
