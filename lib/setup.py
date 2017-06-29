@@ -146,6 +146,23 @@ ext_modules = [
         extra_compile_args={
             'gcc': ['-Wno-cpp', '-Wno-unused-function', '-std=c99']},
     ),
+    Extension('nms.mv',
+        ['nms/mv_kernel.cu', 'nms/gpu_mv.pyx'],
+        library_dirs=[CUDA['lib64']],
+        libraries=['cudart'],
+        language='c++',
+        runtime_library_dirs=[CUDA['lib64']],
+        # this syntax is specific to this build system
+        # we're only going to use certain compiler args with nvcc and not with
+        # gcc the implementation of this trick is in customize_compiler() below
+        extra_compile_args={'gcc': ["-Wno-unused-function"],
+                            'nvcc': ['-arch=sm_35',
+                                     '--ptxas-options=-v',
+                                     '-c',
+                                     '--compiler-options',
+                                     "'-fPIC'"]},
+        include_dirs = [numpy_include, CUDA['include']]
+    ),
 ]
 
 setup(

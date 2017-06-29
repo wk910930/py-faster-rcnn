@@ -48,6 +48,9 @@ __C.TRAIN.BATCH_SIZE = 128
 
 # Fraction of minibatch that is labeled foreground (i.e. class > 0)
 __C.TRAIN.FG_FRACTION = 0.25
+__C.TRAIN.FG_FRACTIONS = [0.3]
+__C.TRAIN.FG_THRESH_HIS = [1.0]
+__C.TRAIN.FG_THRESH_LOS = [0.5]
 
 # Overlap threshold for a ROI to be considered foreground (if >= FG_THRESH)
 __C.TRAIN.FG_THRESH = 0.5
@@ -56,6 +59,10 @@ __C.TRAIN.FG_THRESH = 0.5
 # overlap in [LO, HI))
 __C.TRAIN.BG_THRESH_HI = 0.5
 __C.TRAIN.BG_THRESH_LO = 0.1
+
+__C.TRAIN.BG_FRACTIONS = [0.85, 0.15]
+__C.TRAIN.BG_THRESH_HIS = [0.5, 0.1]
+__C.TRAIN.BG_THRESH_LOS = [0.1, 0.0]
 
 # Use horizontally-flipped images during training?
 __C.TRAIN.USE_FLIPPED = True
@@ -122,7 +129,10 @@ __C.TRAIN.RPN_BBOX_INSIDE_WEIGHTS = (1.0, 1.0, 1.0, 1.0)
 # and give negatives a weight of (1 - p)
 # Set to -1.0 to use uniform example weighting
 __C.TRAIN.RPN_POSITIVE_WEIGHT = -1.0
+# Mix anchors used for RPN and later layer
+__C.TRAIN.MIX_INDEX = True
 
+__C.TRAIN.FG_SEG_THRESH = 0.5
 
 #
 # Testing options
@@ -190,6 +200,8 @@ __C.TEST.RPN_POST_NMS_TOP_N = 300
 # Proposal height and width both need to be greater than RPN_MIN_SIZE (at orig image scale)
 __C.TEST.RPN_MIN_SIZE = 16
 
+__C.TEST.MASK_MERGE_IOU_THRESH = 0.5
+__C.TEST.MASK_MERGE_NMS_THRESH = 0.3
 
 #
 # MISC
@@ -234,6 +246,10 @@ __C.USE_GPU_NMS = True
 # Default GPU device id
 __C.GPU_ID = 0
 
+# Related to mask resizing and binarize predicted masks
+__C.BINARIZE_THRESH = 0.4
+# Mask estimation (if any) size (may be different from CFM input size)
+__C.MASK_SIZE = 21
 
 def get_output_dir(imdb, net=None):
     """Return the directory where experimental artifacts are placed.

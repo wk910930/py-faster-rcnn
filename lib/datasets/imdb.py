@@ -24,6 +24,8 @@ class imdb(object):
         self._obj_proposer = 'selective_search'
         self._roidb = None
         self._roidb_handler = self.default_roidb
+        self._maskdb = None
+        self._maskdb_handler = self.default_maskdb
         # Use this dict for storing dataset specific config options
         self.config = {}
 
@@ -51,9 +53,21 @@ class imdb(object):
     def roidb_handler(self, val):
         self._roidb_handler = val
 
+    @property
+    def maskdb_handler(self):
+        return self._roidb_handler
+
+    @maskdb_handler.setter
+    def maskdb_handler(self, val):
+        self._roidb_handler = val
+
     def set_proposal_method(self, method):
         method = eval('self.' + method + '_roidb')
         self.roidb_handler = method
+
+    def set_mask_handler(self, method):
+        method = eval('self.' + method + '_maskdb')
+        self.maskdb_handler = method
 
     @property
     def roidb(self):
@@ -66,6 +80,14 @@ class imdb(object):
             return self._roidb
         self._roidb = self.roidb_handler()
         return self._roidb
+
+    @property
+    def maskdb(self):
+        if self._maskdb is not None:
+            return self._maskdb
+        else:
+            self._maskdb = self.maskdb_handler()
+            return self._maskdb
 
     @property
     def cache_path(self):
@@ -82,6 +104,9 @@ class imdb(object):
         raise NotImplementedError
 
     def default_roidb(self):
+        raise NotImplementedError
+
+    def default_maskdb(self):
         raise NotImplementedError
 
     def evaluate_detections(self, all_boxes, output_dir=None):
