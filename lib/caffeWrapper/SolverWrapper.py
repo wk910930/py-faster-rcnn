@@ -83,12 +83,8 @@ class SolverWrapper(object):
         # but caffe save parameters according to layer name instead of
         # parameter names, its size will exceed 2GB, which make program crash
         # Luckily, we may save it to HDF5 to avoid this issues
-        if not cfg.MNC_MODE:
-            filename = os.path.join(self.output_dir, filename)
-            net.save(str(filename))
-        else:
-            filename = os.path.join(self.output_dir, filename + '.h5')
-            net.save_to_hdf5(str(filename), False)
+        filename = os.path.join(self.output_dir, filename + '.h5')
+        net.save_to_hdf5(str(filename), False)
         print 'Wrote snapshot to: {:s}'.format(filename)
 
         if scale_bbox_params:
