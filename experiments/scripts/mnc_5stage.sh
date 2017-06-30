@@ -34,15 +34,15 @@ time ./tools/train_seg_net.py --gpu ${GPU_ID} \
   --iters ${ITERS} \
   --cfg experiments/cfgs/mnc_5stage.yml \
   ${EXTRA_ARGS}
-  
+
 set +x
 NET_FINAL=`grep -B 1 "done solving" ${LOG} | grep "Wrote snapshot" | awk '{print $4}'`
 set -x
 
 time ./tools/test_seg_net.py --gpu ${GPU_ID} \
-  --def models/${NET}/mnc_5stage/test.prototxt \
+  --def models/${PT_DIR}/${NET}/mnc_5stage/test.prototxt \
   --net ${NET_FINAL} \
   --imdb ${DATASET_TEST} \
-  --cfg experiments/cfgs/${NET}/mnc_5stage.yml \
+  --cfg experiments/cfgs/mnc_5stage.yml \
   --task seg
 

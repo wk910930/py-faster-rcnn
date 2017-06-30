@@ -15,10 +15,10 @@ import heapq
 import caffe
 from utils.timer import Timer
 from nms.nms_wrapper import apply_nms, apply_nms_mask_single
-from mnc_config import cfg, get_output_dir
+from fast_rcnn.config import cfg, get_output_dir
 from utils.blob import prep_im_for_blob, im_list_to_blob, prep_im_for_blob_cfm, pred_rois_for_blob
-from transform.bbox_transform import clip_boxes, bbox_transform_inv, filter_small_boxes
-from transform.mask_transform import cpu_mask_voting, gpu_mask_voting
+from datasets.transform.bbox_transform import clip_boxes, bbox_transform_inv, filter_small_boxes
+from datasets.transform.mask_transform import cpu_mask_voting, gpu_mask_voting
 
 
 class TesterWrapper(object):

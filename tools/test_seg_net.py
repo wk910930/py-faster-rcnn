@@ -17,7 +17,7 @@ import pprint
 import _init_paths
 import caffe
 from fast_rcnn.config import cfg, cfg_from_file
-from db.imdb import get_imdb
+from datasets.factory import get_imdb
 from caffeWrapper.TesterWrapper import TesterWrapper
 
 
