@@ -203,6 +203,10 @@ __C.TEST.RPN_MIN_SIZE = 16
 __C.TEST.MASK_MERGE_IOU_THRESH = 0.5
 __C.TEST.MASK_MERGE_NMS_THRESH = 0.3
 
+# threshold for binarize a mask
+__C.TEST.USE_MASK_MERGE = True
+__C.TEST.USE_GPU_MASK_MERGE = True
+
 #
 # MISC
 #
