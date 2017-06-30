@@ -61,21 +61,14 @@ class SolverWrapper(object):
             # save original values
             orig_0 = net.params['bbox_pred'][0].data.copy()
             orig_1 = net.params['bbox_pred'][1].data.copy()
-            if cfg.CFM_MODE:
-                cfm_mean = self.bbox_means.ravel()
-                cfm_std = self.bbox_stds.ravel()
-                net.params['bbox_pred'][0].data[...] = \
-                    (net.params['bbox_pred'][0].data * cfm_std[:, np.newaxis])
-                net.params['bbox_pred'][1].data[...] = \
-                    (net.params['bbox_pred'][1].data * cfm_std + cfm_mean)
-            else:
-                # scale and shift with transform reg unnormalization; then save snapshot
-                net.params['bbox_pred'][0].data[...] = \
-                    (net.params['bbox_pred'][0].data *
-                     self.bbox_stds[:, np.newaxis])
-                net.params['bbox_pred'][1].data[...] = \
-                    (net.params['bbox_pred'][1].data *
-                     self.bbox_stds + self.bbox_means)
+
+            # scale and shift with transform reg unnormalization; then save snapshot
+            net.params['bbox_pred'][0].data[...] = \
+                (net.params['bbox_pred'][0].data *
+                 self.bbox_stds[:, np.newaxis])
+            net.params['bbox_pred'][1].data[...] = \
+                (net.params['bbox_pred'][1].data *
+                 self.bbox_stds + self.bbox_means)
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
