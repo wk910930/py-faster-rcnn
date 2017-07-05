@@ -120,30 +120,6 @@ def clip_boxes(boxes, im_shape):
     return clipped_boxes, keep
 
 
-def scale_boxes(boxes, alpha):
-    """
-    Scale boxes from w/h to alpha * w/h while keep center unchanged
-    Args:
-        boxes: a set of boxes specified using x1, y1, x2, y2
-        alpha: scaling factor
-
-    Returns:
-        boxes: boxes after applying scaling
-    """
-    w = boxes[:, 2] - boxes[:, 0] + 1
-    h = boxes[:, 3] - boxes[:, 1] + 1
-    ctr_x = boxes[:, 0] + 0.5 * w
-    ctr_y = boxes[:, 1] + 0.5 * h
-    scaled_w = w * alpha
-    scaled_h = h * alpha
-    scaled_boxes = np.zeros(boxes.shape, dtype=boxes.dtype)
-    scaled_boxes[:, 0] = ctr_x - 0.5 * scaled_w
-    scaled_boxes[:, 1] = ctr_y - 0.5 * scaled_h
-    scaled_boxes[:, 2] = ctr_x + 0.5 * scaled_w
-    scaled_boxes[:, 3] = ctr_y + 0.5 * scaled_h
-    return scaled_boxes
-
-
 def bbox_compute_targets(ex_rois, gt_rois, normalize):
     """
     Compute bounding-box regression targets for an image
