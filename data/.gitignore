@@ -1,11 +1,17 @@
 selective_search*
+
+# well-trained model
 imagenet_models*
 mnc_model
 fast_rcnn_models*
+faster_rcnn_models
+
+# data
 VOCdevkit*
-ILSVRCdevkit*
 pascal_voc_proposals
 coco
 coco_proposals
+ILSVRCdevkit*
 ilsvrc_proposals
+
 cache
