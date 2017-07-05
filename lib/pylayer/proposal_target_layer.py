@@ -13,7 +13,7 @@ from fast_rcnn.config import cfg
 from datasets.transform.bbox_transform import \
     bbox_transform, bbox_compute_targets, \
     scale_boxes, get_bbox_regression_label
-from datasets.transform.anchors import generate_anchors
+from rpn.generate_anchors import generate_anchors
 from datasets.transform.mask_transform import intersect_mask
 from utils.cython_bbox import bbox_overlaps
 
