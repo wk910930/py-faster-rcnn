@@ -252,7 +252,7 @@ __C.GPU_ID = 0
 
 # Related to mask resizing and binarize predicted masks
 __C.BINARIZE_THRESH = 0.4
-# Mask estimation (if any) size (may be different from CFM input size)
+# Mask estimation (if any) size
 __C.MASK_SIZE = 21
 
 def get_output_dir(imdb, net=None):

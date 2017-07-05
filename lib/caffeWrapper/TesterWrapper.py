@@ -16,7 +16,7 @@ import caffe
 from utils.timer import Timer
 from nms.nms_wrapper import apply_nms, apply_nms_mask_single
 from fast_rcnn.config import cfg, get_output_dir
-from utils.blob import prep_im_for_blob, im_list_to_blob, prep_im_for_blob_cfm, pred_rois_for_blob
+from utils.blob import prep_im_for_blob, im_list_to_blob, pred_rois_for_blob
 from datasets.transform.bbox_transform import clip_boxes, bbox_transform_inv, filter_small_boxes
 from datasets.transform.mask_transform import cpu_mask_voting, gpu_mask_voting
 
@@ -65,22 +65,8 @@ class TesterWrapper(object):
                     cPickle.dump(seg_mask, f, cPickle.HIGHEST_PROTOCOL)
             print 'Evaluating segmentation using MNC 5 stage inference'
             self.imdb.evaluate_segmentation(seg_box, seg_mask, output_dir)
-        elif self.task_name == 'cfm':
-            if os.path.isfile(det_file) and os.path.isfile(seg_file):
-                with open(det_file, 'rb') as f:
-                    cfm_boxes = cPickle.load(f)
-                with open(seg_file, 'rb') as f:
-                    cfm_masks = cPickle.load(f)
-            else:
-                cfm_boxes, cfm_masks = self.get_cfm_result()
-                with open(det_file, 'wb') as f:
-                    cPickle.dump(cfm_boxes, f, cPickle.HIGHEST_PROTOCOL)
-                with open(seg_file, 'wb') as f:
-                    cPickle.dump(cfm_masks, f, cPickle.HIGHEST_PROTOCOL)
-            print 'Evaluating segmentation using convolutional feature masking'
-            self.imdb.evaluate_segmentation(cfm_boxes, cfm_masks, output_dir)
         else:
-            print 'task name only support \'det\', \'seg\', \'cfm\' and \'vis_seg\''
+            print 'task name only support \'det\', \'seg\', and \'vis_seg\''
             raise NotImplementedError
 
     def get_detection_result(self):
@@ -282,133 +268,3 @@ class TesterWrapper(object):
             'im_info': blobs['im_info'].astype(np.float32, copy=False)
         }
         return forward_kwargs, im_scales
-
-    def get_cfm_result(self):
-        # detection threshold for each class
-        # (this is adaptively set based on the max_per_set constraint)
-        thresh = -np.inf * np.ones(self.num_classes)
-        # top_scores will hold one min heap of scores per class (used to enforce
-        # the max_per_set constraint)
-        top_scores = [[] for _ in xrange(self.num_classes)]
-        # all detections and segmentation are collected into a list:
-        # Since the number of dets/segs are of variable size
-        all_boxes = [[[] for _ in xrange(self.num_images)]
-                     for _ in xrange(self.num_classes)]
-        all_masks = [[[] for _ in xrange(self.num_images)]
-                     for _ in xrange(self.num_classes)]
-        _t = {'im_detect': Timer(), 'misc': Timer()}
-        for i in xrange(self.num_images):
-            _t['im_detect'].tic()
-            masks, boxes, seg_scores = self.cfm_network_forward(i)
-            for j in xrange(1, self.num_classes):
-                inds = np.where(seg_scores[:, j] > thresh[j])[0]
-                cls_scores = seg_scores[inds, j]
-                cls_boxes = boxes[inds, :]
-                cls_masks = masks[inds, :]
-                top_inds = np.argsort(-cls_scores)[:self.max_per_image]
-                cls_scores = cls_scores[top_inds]
-                cls_boxes = cls_boxes[top_inds, :]
-                cls_masks = cls_masks[top_inds, :]
-                # push new scores onto the min heap
-                for val in cls_scores:
-                    heapq.heappush(top_scores[j], val)
-                # if we've collected more than the max number of detection,
-                # then pop items off the min heap and update the class threshold
-                if len(top_scores[j]) > self.max_per_set:
-                    while len(top_scores[j]) > self.max_per_set:
-                        heapq.heappop(top_scores[j])
-                    thresh[j] = top_scores[j][0]
-                box_before_nms = np.hstack((cls_boxes, cls_scores[:, np.newaxis]))\
-                    .astype(np.float32, copy=False)
-                mask_before_nms = cls_masks.astype(np.float32, copy=False)
-                all_boxes[j][i], all_masks[j][i] = apply_nms_mask_single(box_before_nms, mask_before_nms, cfg.TEST.NMS)
-            _t['im_detect'].toc()
-            print 'process image %d/%d, forward average time %f' % (i, self.num_images,
-                                                                    _t['im_detect'].average_time)
-        for j in xrange(1, self.num_classes):
-            for i in xrange(self.num_images):
-                inds = np.where(all_boxes[j][i][:, -1] > thresh[j])[0]
-                all_boxes[j][i] = all_boxes[j][i][inds, :]
-                all_masks[j][i] = all_masks[j][i][inds]
-
-        return all_boxes, all_masks
-
-    def cfm_network_forward(self, im_i):
-        im = cv2.imread(self.imdb.image_path_at(im_i))
-        roidb_cache = os.path.join('data/cache/voc_2012_val_mcg_maskdb/', self.imdb._image_index[im_i] + '.mat')
-        roidb = scipy.io.loadmat(roidb_cache)
-        boxes = roidb['boxes']
-        filter_keep = filter_small_boxes(boxes, min_size=16)
-        boxes = boxes[filter_keep, :]
-        masks = roidb['masks']
-        masks = masks[filter_keep, :, :]
-        assert boxes.shape[0] == masks.shape[0]
-
-        # Resize input mask, make it the same as CFM's input size
-        mask_resize = np.zeros((masks.shape[0], cfg.TEST.CFM_INPUT_MASK_SIZE, cfg.TEST.CFM_INPUT_MASK_SIZE))
-        for i in xrange(masks.shape[0]):
-            mask_resize[i, :, :] = cv2.resize(masks[i, :, :].astype(np.float),
-                                              (cfg.TEST.CFM_INPUT_MASK_SIZE, cfg.TEST.CFM_INPUT_MASK_SIZE))
-        masks = mask_resize
-
-        # Get top-k proposals from MCG
-        if cfg.TEST.USE_TOP_K_MCG:
-            num_keep = min(boxes.shape[0], cfg.TEST.USE_TOP_K_MCG)
-            boxes = boxes[:num_keep, :]
-            masks = masks[:num_keep, :, :]
-            assert boxes.shape[0] == masks.shape[0]
-        # deal with multi-scale test
-        # we group several adjacent scales to do forward
-        _, im_scale_factors = prep_im_for_blob_cfm(im, cfg.TEST.SCALES)
-        orig_boxes = boxes.copy()
-        boxes = pred_rois_for_blob(boxes, im_scale_factors)
-        num_scale_iter = int(np.ceil(len(cfg.TEST.SCALES) / float(cfg.TEST.GROUP_SCALE)))
-        LO_SCALE = 0
-        MAX_ROIS_GPU = cfg.TEST.MAX_ROIS_GPU
-        # set up return results
-        res_boxes = np.zeros((0, 4), dtype=np.float32)
-        res_masks = np.zeros((0, 1, cfg.MASK_SIZE, cfg.MASK_SIZE), dtype=np.float32)
-        res_seg_scores = np.zeros((0, self.num_classes), dtype=np.float32)
-
-        for scale_iter in xrange(num_scale_iter):
-            HI_SCALE = min(LO_SCALE + cfg.TEST.GROUP_SCALE, len(cfg.TEST.SCALES))
-            inds_this_scale = np.where((boxes[:, 0] >= LO_SCALE) & (boxes[:, 0] < HI_SCALE))[0]
-            if len(inds_this_scale) == 0:
-                LO_SCALE += cfg.TEST.GROUP_SCALE
-                continue
-            max_rois_this_scale = MAX_ROIS_GPU[scale_iter]
-            boxes_this_scale = boxes[inds_this_scale, :]
-            masks_this_scale = masks[inds_this_scale, :, :]
-            num_iter_this_scale = int(np.ceil(boxes_this_scale.shape[0] / float(max_rois_this_scale)))
-            # make the batch index of input box start from 0
-            boxes_this_scale[:, 0] -= min(boxes_this_scale[:, 0])
-            # re-prepare im blob for this_scale
-            input_blobs = {}
-            input_blobs['data'], _ = prep_im_for_blob_cfm(im, cfg.TEST.SCALES[LO_SCALE:HI_SCALE])
-            input_blobs['data'] = input_blobs['data'].astype(np.float32, copy=False)
-            input_start = 0
-            for test_iter in xrange(num_iter_this_scale):
-                input_end = min(input_start + max_rois_this_scale, boxes_this_scale.shape[0])
-                input_box = boxes_this_scale[input_start:input_end, :]
-                input_mask = masks_this_scale[input_start:input_end, :, :]
-                input_blobs['rois'] = input_box.astype(np.float32, copy=False)
-                input_blobs['masks'] = input_mask.reshape(input_box.shape[0], 1,
-                                                    cfg.TEST.CFM_INPUT_MASK_SIZE, cfg.TEST.CFM_INPUT_MASK_SIZE
-                                                    ).astype(np.float32, copy=False)
-                input_blobs['masks'] = (input_blobs['masks'] >= cfg.BINARIZE_THRESH).astype(np.float32, copy=False)
-                self.net.blobs['data'].reshape(*input_blobs['data'].shape)
-                self.net.blobs['rois'].reshape(*input_blobs['rois'].shape)
-                self.net.blobs['masks'].reshape(*input_blobs['masks'].shape)
-                blobs_out = self.net.forward(**input_blobs)
-                output_mask = blobs_out['mask_prob'].copy()
-                output_score = blobs_out['seg_cls_prob'].copy()
-                res_masks = np.vstack((res_masks,
-                                       output_mask.reshape(
-                                           input_box.shape[0], 1, cfg.MASK_SIZE, cfg.MASK_SIZE
-                                       ).astype(np.float32, copy=False)))
-                res_seg_scores = np.vstack((res_seg_scores, output_score))
-                input_start += max_rois_this_scale
-            res_boxes = np.vstack((res_boxes, orig_boxes[inds_this_scale, :]))
-            LO_SCALE += cfg.TEST.GROUP_SCALE
-
-        return res_masks, res_boxes, res_seg_scores
