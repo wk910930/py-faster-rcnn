@@ -11,7 +11,8 @@ import yaml
 
 from fast_rcnn.config import cfg
 from rpn.generate_anchors import generate_anchors
-from datasets.transform.bbox_transform import clip_boxes, bbox_transform_inv, filter_small_boxes
+import datasets.ds_utils as ds_utils
+from datasets.transform.bbox_transform import clip_boxes, bbox_transform_inv
 from nms.nms_wrapper import nms
 
 
@@ -130,7 +131,7 @@ class ProposalLayer(caffe.Layer):
 
         # 3. remove predicted boxes with either height or width < threshold
         # (NOTE: convert min_size to input image scale stored in im_info[2])
-        keep = filter_small_boxes(proposals, min_size * im_info[2])
+        keep = ds_utils.filter_small_boxes(proposals, min_size * im_info[2])
         proposals = proposals[keep, :]
         scores = scores[keep]
         self._ind_after_filter = keep
