@@ -539,7 +539,7 @@ layer {
   top: 'rpn_bbox_inside_weights'
   top: 'rpn_bbox_outside_weights'
   python_param {
-    module: 'pylayer.anchor_target_layer'
+    module: 'rpn.anchor_target_layer'
     layer: 'AnchorTargetLayer'
     param_str: "{'feat_stride': 16}"
   }
