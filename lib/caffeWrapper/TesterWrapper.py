@@ -47,9 +47,7 @@ class TesterWrapper(object):
         output_dir = self.output_dir
         det_file = os.path.join(output_dir, 'res_boxes.pkl')
         seg_file = os.path.join(output_dir, 'res_masks.pkl')
-        if self.task_name == 'det':
-            self.get_detection_result()
-        elif self.task_name == 'vis_seg':
+        if self.task_name == 'vis_seg':
             self.vis_segmentation_result()
         elif self.task_name == 'seg':
             if os.path.isfile(det_file) and os.path.isfile(seg_file):
@@ -66,68 +64,8 @@ class TesterWrapper(object):
             print 'Evaluating segmentation using MNC 5 stage inference'
             self.imdb.evaluate_segmentation(seg_box, seg_mask, output_dir)
         else:
-            print 'task name only support \'det\', \'seg\', and \'vis_seg\''
+            print 'task name only support \'seg\', and \'vis_seg\''
             raise NotImplementedError
-
-    def get_detection_result(self):
-        output_dir = self.output_dir
-        # heuristic: keep an average of 40 detections per class per images prior to NMS
-        max_per_set = 40 * self.num_images
-        # heuristic: keep at most 100 detection per class per image prior to NMS
-        max_per_image = 100
-        # detection threshold for each class (this is adaptively set based on the
-        # max_per_set constraint)
-        thresh = -np.inf * np.ones(self.num_classes)
-        # top_scores will hold one min heap of scores per class (used to enforce
-        # the max_per_set constraint)
-        top_scores = [[] for _ in xrange(self.num_classes)]
-        # all detections are collected into:
-        #    all_boxes[cls][image] = N x 5 array of detections in
-        #    (x1, y1, x2, y2, score)
-        all_boxes = [[[] for _ in xrange(self.num_images)]
-                     for _ in xrange(self.num_classes)]
-        _t = {'im_detect': Timer(), 'misc': Timer()}
-        for i in xrange(self.num_images):
-            im = cv2.imread(self.imdb.image_path_at(i))
-            _t['im_detect'].tic()
-            scores, boxes = self._detection_forward(im)
-            _t['im_detect'].toc()
-            for j in xrange(1, self.num_classes):
-                inds = np.where(scores[:, j] > thresh[j])[0]
-                cls_scores = scores[inds, j]
-                cls_boxes = boxes[inds, j*4:(j+1)*4]
-                top_inds = np.argsort(-cls_scores)[:max_per_image]
-                cls_scores = cls_scores[top_inds]
-                cls_boxes = cls_boxes[top_inds, :]
-                # push new scores onto the min heap
-                for val in cls_scores:
-                    heapq.heappush(top_scores[j], val)
-                # if we've collected more than the max number of detection,
-                # then pop items off the min heap and update the class threshold
-                if len(top_scores[j]) > max_per_set:
-                    while len(top_scores[j]) > max_per_set:
-                        heapq.heappop(top_scores[j])
-                    thresh[j] = top_scores[j][0]
-
-                all_boxes[j][i] = np.hstack((cls_boxes, cls_scores[:, np.newaxis]))\
-                    .astype(np.float32, copy=False)
-            print 'process image %d/%d, forward average time %f' % (i, self.num_images,
-                                                                    _t['im_detect'].average_time)
-
-        for j in xrange(1, self.num_classes):
-            for i in xrange(self.num_images):
-                inds = np.where(all_boxes[j][i][:, -1] > thresh[j])[0]
-                all_boxes[j][i] = all_boxes[j][i][inds, :]
-
-        det_file = os.path.join(output_dir, 'detections.pkl')
-        with open(det_file, 'wb') as f:
-            cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
-
-        print 'Applying NMS to all detections'
-        nms_dets = apply_nms(all_boxes, cfg.TEST.NMS)
-
-        print 'Evaluating detections'
-        self.imdb.evaluate_detections(nms_dets, output_dir)
 
     def vis_segmentation_result(self):
         self.imdb.visualization_segmentation(self.output_dir)
