@@ -18,8 +18,7 @@ import _init_paths
 import caffe
 from fast_rcnn.config import cfg, cfg_from_file
 from datasets.factory import get_imdb
-from caffeWrapper.TesterWrapper import TesterWrapper
-
+from mnc.test import test_net
 
 def parse_args():
     """
@@ -47,16 +46,13 @@ def parse_args():
     parser.add_argument('--set', dest='set_cfgs',
                         help='set config keys', default=None,
                         nargs=argparse.REMAINDER)
-    parser.add_argument('--task', dest='task_name',
-                        help='set task name', default='sds',
-                        type=str)
 
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
 
-    return parser.parse_args()
-
+    args = parser.parse_args()
+    return args
 
 if __name__ == '__main__':
     args = parse_args()
@@ -79,6 +75,10 @@ if __name__ == '__main__':
     caffe.set_mode_gpu()
     caffe.set_device(args.gpu_id)
 
+    net = caffe.Net(args.prototxt, args.caffemodel, caffe.TEST)
+    net.name = os.path.splitext(os.path.basename(args.caffemodel))[0]
+
     imdb = get_imdb(args.imdb_name)
-    _tester = TesterWrapper(args.prototxt, imdb, args.caffemodel, args.task_name)
-    _tester.get_result()
+
+    test_net(net, imdb)
+    print 'Done'

@@ -43,6 +43,4 @@ time ./tools/test_seg_net.py --gpu ${GPU_ID} \
   --def models/${PT_DIR}/${NET}/mnc_5stage/test.prototxt \
   --net ${NET_FINAL} \
   --imdb ${DATASET_TEST} \
-  --cfg experiments/cfgs/mnc_5stage.yml \
-  --task seg
-
+  --cfg experiments/cfgs/mnc_5stage.yml

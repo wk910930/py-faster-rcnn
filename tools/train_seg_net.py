@@ -17,7 +17,7 @@ import _init_paths
 from fast_rcnn.config import cfg, cfg_from_file, get_output_dir
 from db.roidb import attach_roidb
 from db.maskdb import attach_maskdb
-from caffeWrapper.SolverWrapper import SolverWrapper
+from mnc.train import train_net
 import caffe
 
 
@@ -54,11 +54,12 @@ def parse_args():
         parser.print_help()
         sys.exit(1)
 
-    return parser.parse_args()
-
+    args = parser.parse_args()
+    return args
 
 if __name__ == '__main__':
     args = parse_args()
+
     print('Called with args:')
     print(args)
 
@@ -66,30 +67,34 @@ if __name__ == '__main__':
         cfg_from_file(args.cfg_file)
 
     cfg.GPU_ID = args.gpu_id
+
     print('Using config:')
     pprint.pprint(cfg)
-
-    caffe.set_mode_gpu()
-    caffe.set_device(args.gpu_id)
 
     if not args.randomize:
         # fix the random seeds (numpy and caffe) for reproducibility
         np.random.seed(cfg.RNG_SEED)
         caffe.set_random_seed(cfg.RNG_SEED)
 
+    # set up caffe
+    caffe.set_mode_gpu()
+    caffe.set_device(args.gpu_id)
+
     # get imdb and roidb from specified imdb_name
     imdb, roidb = attach_roidb(args.imdb_name)
     imdb, maskdb = attach_maskdb(args.imdb_name)
-
     print '{:d} roidb entries'.format(len(roidb))
 
     output_dir = get_output_dir(imdb, None)
     print 'Output will be saved to `{:s}`'.format(output_dir)
 
-    _solver = SolverWrapper(args.solver, roidb, maskdb, output_dir, imdb,
-                            pretrained_model=args.pretrained_model)
+    train_net(args.solver, roidb, maskdb, output_dir, imdb,
+              pretrained_model=args.pretrained_model,
+              max_iters=args.max_iters)
 
-    print 'Solving...'
-    _solver.train_model(args.max_iters)
-    print 'done solving'
+    # _solver = SolverWrapper(args.solver, roidb, maskdb, output_dir, imdb,
+    #                         pretrained_model=args.pretrained_model)
+    # print 'Solving...'
+    # _solver.train_model(args.max_iters)
+    # print 'done solving'
 

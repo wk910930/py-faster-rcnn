@@ -51,7 +51,7 @@ def parse_args():
     return args
 
 
-def prepare_mnc_args(im, net):
+def im_detect(im, net):
     # Prepare image data blob
     blobs = {'data': None}
     processed_ims = []
@@ -73,11 +73,6 @@ def prepare_mnc_args(im, net):
         'data': blobs['data'].astype(np.float32, copy=False),
         'im_info': blobs['im_info'].astype(np.float32, copy=False)
     }
-    return forward_kwargs, im_scales
-
-
-def im_detect(im, net):
-    forward_kwargs, im_scales = prepare_mnc_args(im, net)
     blobs_out = net.forward(**forward_kwargs)
     # output we need to collect:
     # 1. output from phase1'
