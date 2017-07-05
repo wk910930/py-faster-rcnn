@@ -11,7 +11,7 @@ import numpy as np
 
 from utils.timer import Timer
 from fast_rcnn.config import cfg
-from db.roidb import add_bbox_regression_targets, compute_mcg_mean_std
+from db.roidb import add_bbox_regression_targets
 import caffe
 from caffe.proto import caffe_pb2
 import google.protobuf as pb2
