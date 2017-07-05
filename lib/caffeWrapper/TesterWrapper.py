@@ -16,8 +16,9 @@ import caffe
 from utils.timer import Timer
 from nms.nms_wrapper import apply_nms_mask_single
 from fast_rcnn.config import cfg, get_output_dir
+from fast_rcnn.bbox_transform import bbox_transform_inv
+from fast_rcnn.bbox_transform import clip_boxes_mnc
 from utils.blob import prep_im_for_blob, im_list_to_blob, pred_rois_for_blob
-from datasets.transform.bbox_transform import clip_boxes, bbox_transform_inv
 from datasets.transform.mask_transform import cpu_mask_voting, gpu_mask_voting
 
 
@@ -155,7 +156,7 @@ class TesterWrapper(object):
         boxes = rois[:, 1:5] / im_scales[0]
         box_deltas = blobs_out['bbox_pred']
         pred_boxes = bbox_transform_inv(boxes, box_deltas)
-        pred_boxes, _ = clip_boxes(pred_boxes, im.shape)
+        pred_boxes, _ = clip_boxes_mnc(pred_boxes, im.shape)
         # 2. Detection score
         scores = blobs_out['cls_prob']
         return scores, pred_boxes
@@ -175,8 +176,8 @@ class TesterWrapper(object):
         # Boxes are in resized space, we un-scale them back
         rois_phase1 = rois_phase1[:, 1:5] / im_scales[0]
         rois_phase2 = rois_phase2[:, 1:5] / im_scales[0]
-        rois_phase1, _ = clip_boxes(rois_phase1, im.shape)
-        rois_phase2, _ = clip_boxes(rois_phase2, im.shape)
+        rois_phase1, _ = clip_boxes_mnc(rois_phase1, im.shape)
+        rois_phase2, _ = clip_boxes_mnc(rois_phase2, im.shape)
         # concatenate two stages to get final network output
         masks = np.concatenate((masks_phase1, masks_phase2), axis=0)
         boxes = np.concatenate((rois_phase1, rois_phase2), axis=0)

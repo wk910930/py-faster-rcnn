@@ -17,7 +17,7 @@ import numpy as np
 import _init_paths
 import caffe
 from fast_rcnn.config import cfg
-from datasets.transform.bbox_transform import clip_boxes
+from fast_rcnn.bbox_transform import clip_boxes_mnc
 from utils.blob import prep_im_for_blob, im_list_to_blob
 from datasets.transform.mask_transform import gpu_mask_voting
 import matplotlib.pyplot as plt
@@ -91,8 +91,8 @@ def im_detect(im, net):
     # Boxes are in resized space, we un-scale them back
     rois_phase1 = rois_phase1[:, 1:5] / im_scales[0]
     rois_phase2 = rois_phase2[:, 1:5] / im_scales[0]
-    rois_phase1, _ = clip_boxes(rois_phase1, im.shape)
-    rois_phase2, _ = clip_boxes(rois_phase2, im.shape)
+    rois_phase1, _ = clip_boxes_mnc(rois_phase1, im.shape)
+    rois_phase2, _ = clip_boxes_mnc(rois_phase2, im.shape)
     # concatenate two stages to get final network output
     masks = np.concatenate((masks_phase1, masks_phase2), axis=0)
     boxes = np.concatenate((rois_phase1, rois_phase2), axis=0)

@@ -10,9 +10,7 @@ import yaml
 import numpy as np
 import numpy.random as npr
 from fast_rcnn.config import cfg
-from datasets.transform.bbox_transform import \
-    bbox_transform, bbox_compute_targets, \
-    get_bbox_regression_label
+from fast_rcnn.bbox_transform import bbox_transform
 from rpn.generate_anchors import generate_anchors
 from datasets.transform.mask_transform import intersect_mask
 from utils.cython_bbox import bbox_overlaps
@@ -157,11 +155,11 @@ def _sample_rois(all_rois, gt_boxes, rois_per_image, num_classes, gt_masks, im_s
     labels[fg_rois_per_image:] = 0
     rois = all_rois[keep_inds]
 
-    bbox_target_data = bbox_compute_targets(
+    bbox_target_data = _bbox_compute_targets(
         rois[:, 1:5], gt_boxes[gt_assignment[keep_inds], :4], normalize=True)
     bbox_target_data = np.hstack((labels[:, np.newaxis], bbox_target_data))\
         .astype(np.float32, copy=False)
-    bbox_targets, bbox_inside_weights = get_bbox_regression_label(
+    bbox_targets, bbox_inside_weights = _get_bbox_regression_labels(
         bbox_target_data, num_classes)
     bbox_outside_weights = np.array(bbox_inside_weights > 0).astype(np.float32)
 
@@ -209,3 +207,51 @@ def _sample_rois(all_rois, gt_boxes, rois_per_image, num_classes, gt_masks, im_s
     blobs['gt_masks_info'] = top_mask_info
 
     return blobs, fg_inds, bg_inds, keep_inds
+
+def _get_bbox_regression_labels(bbox_target_data, num_classes):
+    """Bounding-box regression targets (bbox_target_data) are stored in a
+    compact form N x (class, tx, ty, tw, th)
+
+    This function expands those targets into the 4-of-4*K representation used
+    by the network (i.e. only one class has non-zero targets).
+
+    Returns:
+        bbox_target (ndarray): N x 4K blob of regression targets
+        bbox_inside_weights (ndarray): N x 4K blob of loss weights
+    """
+
+    assert bbox_target_data.shape[1] == 5
+    clss = bbox_target_data[:, 0]
+    bbox_targets = np.zeros((clss.size, 4 * num_classes), dtype=np.float32)
+    bbox_inside_weights = np.zeros(bbox_targets.shape, dtype=np.float32)
+    inds = np.where(clss > 0)[0]
+    for ind in inds:
+        cls = int(clss[ind])
+        start = 4 * cls
+        end = start + 4
+        bbox_targets[ind, start:end] = bbox_target_data[ind, 1:]
+        bbox_inside_weights[ind, start:end] = cfg.TRAIN.BBOX_INSIDE_WEIGHTS
+    return bbox_targets, bbox_inside_weights
+
+def _bbox_compute_targets(ex_rois, gt_rois, normalize):
+    """
+    Compute bounding-box regression targets for an image
+    Parameters:
+    -----------
+    ex_rois: ROIs from external source (anchors or proposals)
+    gt_rois: ground truth ROIs
+    normalize: whether normalize box (since RPN doesn't need to normalize)
+
+    Returns:
+    -----------
+    Relative value for anchor or proposals
+    """
+    assert ex_rois.shape == gt_rois.shape
+
+    targets = bbox_transform(ex_rois, gt_rois)
+    if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED and normalize:
+        # Optionally normalize targets by a precomputed mean and std
+        targets = ((targets - np.array(cfg.TRAIN.BBOX_NORMALIZE_MEANS)) /
+                   np.array(cfg.TRAIN.BBOX_NORMALIZE_STDS))
+
+    return targets.astype(np.float32, copy=False)

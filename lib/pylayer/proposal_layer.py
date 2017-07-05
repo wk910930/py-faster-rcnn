@@ -10,9 +10,11 @@ import numpy as np
 import yaml
 
 from fast_rcnn.config import cfg
+from fast_rcnn.bbox_transform import bbox_transform_inv
+from fast_rcnn.bbox_transform import clip_boxes_mnc
 from rpn.generate_anchors import generate_anchors
 import datasets.ds_utils as ds_utils
-from datasets.transform.bbox_transform import clip_boxes, bbox_transform_inv
+
 from nms.nms_wrapper import nms
 
 
@@ -100,7 +102,7 @@ class ProposalLayer(caffe.Layer):
         anchors = self._anchors.reshape((1, A, 4)) + \
                   shifts.reshape((1, K, 4)).transpose((1, 0, 2))
         anchors = anchors.reshape((K * A, 4))
-        _, keep = clip_boxes(anchors, im_info[:2])
+        _, keep = clip_boxes_mnc(anchors, im_info[:2])
         self._anchor_index_before_clip = keep
 
         # Transpose and reshape predicted transform transformations to get them
@@ -123,7 +125,7 @@ class ProposalLayer(caffe.Layer):
         proposals = bbox_transform_inv(anchors, bbox_deltas)
 
         # 2. clip predicted boxes to image
-        proposals, keep = clip_boxes(proposals, im_info[:2])
+        proposals, keep = clip_boxes_mnc(proposals, im_info[:2])
         # Record the cooresponding index before and after clip
         # This step doesn't need unmap
         # We need it to decide whether do back propagation

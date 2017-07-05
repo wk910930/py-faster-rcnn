@@ -13,7 +13,8 @@ import scipy
 
 from datasets.factory import get_imdb
 from fast_rcnn.config import cfg
-from datasets.transform.bbox_transform import compute_targets
+from fast_rcnn.bbox_transform import bbox_transform
+from utils.cython_bbox import bbox_overlaps
 
 
 def prepare_roidb(imdb):
@@ -60,7 +61,7 @@ def add_bbox_regression_targets(roidb):
         max_overlaps = roidb[im_i]['max_overlaps']
         max_classes = roidb[im_i]['max_classes']
         roidb[im_i]['bbox_targets'] = \
-            compute_targets(rois, max_overlaps, max_classes)
+            _compute_targets(rois, max_overlaps, max_classes)
 
     if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
         # Use fixed / precomputed "means" and "stds" instead of empirical values
@@ -138,3 +139,28 @@ def attach_roidb(imdb_names):
     else:
         imdb = get_imdb(imdb_names)
     return imdb, roidb
+
+def _compute_targets(rois, overlaps, labels):
+    """
+    Compute bounding-box regression targets for an image.
+    """
+    # Indices of ground-truth ROIs
+    gt_inds = np.where(overlaps == 1)[0]
+    # Indices of examples for which we try to make predictions
+    ex_inds = np.where(overlaps >= cfg.TRAIN.BBOX_THRESH)[0]
+
+    # Get IoU overlap  each ex ROI and gt ROI
+    ex_gt_overlaps = bbox_overlaps(
+        np.ascontiguousarray(rois[ex_inds, :], dtype=np.float),
+        np.ascontiguousarray(rois[gt_inds, :], dtype=np.float))
+
+    # Find which gt ROI each ex ROI has max overlap with:
+    # this will be the ex ROI's gt target
+    gt_assignment = ex_gt_overlaps.argmax(axis=1)
+    gt_rois = rois[gt_inds[gt_assignment], :]
+    ex_rois = rois[ex_inds, :]
+
+    targets = np.zeros((rois.shape[0], 5), dtype=np.float32)
+    targets[ex_inds, 0] = labels[ex_inds]
+    targets[ex_inds, 1:] = bbox_transform(ex_rois, gt_rois)
+    return targets

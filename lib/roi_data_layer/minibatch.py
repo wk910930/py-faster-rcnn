@@ -162,15 +162,17 @@ def _get_bbox_regression_labels(bbox_target_data, num_classes):
     are similarly expanded.
 
     Returns:
-        bbox_target_data (ndarray): N x 4K blob of regression targets
+        bbox_targets (ndarray): N x 4K blob of regression targets
         bbox_inside_weights (ndarray): N x 4K blob of loss weights
     """
+
+    assert bbox_target_data.shape[1] == 5
     clss = bbox_target_data[:, 0]
     bbox_targets = np.zeros((clss.size, 4 * num_classes), dtype=np.float32)
     bbox_inside_weights = np.zeros(bbox_targets.shape, dtype=np.float32)
     inds = np.where(clss > 0)[0]
     for ind in inds:
-        cls = clss[ind]
+        cls = int(clss[ind])
         start = 4 * cls
         end = start + 4
         bbox_targets[ind, start:end] = bbox_target_data[ind, 1:]

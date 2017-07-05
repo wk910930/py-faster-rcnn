@@ -77,6 +77,26 @@ def clip_boxes(boxes, im_shape):
     boxes[:, 3::4] = np.maximum(np.minimum(boxes[:, 3::4], im_shape[0] - 1), 0)
     return boxes
 
+def clip_boxes_mnc(boxes, im_shape):
+    """
+    Clip boxes inside image boundaries
+    """
+    x1 = boxes[:, 0::4]
+    y1 = boxes[:, 1::4]
+    x2 = boxes[:, 2::4]
+    y2 = boxes[:, 3::4]
+    keep = np.where((x1 >= 0) & (x2 <= im_shape[1] - 1) & (y1 >= 0) & (y2 <= im_shape[0] - 1))[0]
+    clipped_boxes = np.zeros(boxes.shape, dtype=boxes.dtype)
+    # x1 >= 0
+    clipped_boxes[:, 0::4] = np.maximum(np.minimum(boxes[:, 0::4], im_shape[1] - 1), 0)
+    # y1 >= 0
+    clipped_boxes[:, 1::4] = np.maximum(np.minimum(boxes[:, 1::4], im_shape[0] - 1), 0)
+    # x2 < im_shape[1]
+    clipped_boxes[:, 2::4] = np.maximum(np.minimum(boxes[:, 2::4], im_shape[1] - 1), 0)
+    # y2 < im_shape[0]
+    clipped_boxes[:, 3::4] = np.maximum(np.minimum(boxes[:, 3::4], im_shape[0] - 1), 0)
+    return clipped_boxes, keep
+
 def bbox_voting(cls_dets_after_nms, cls_dets, threshold):
     """
     A nice trick to improve performance durning TESTING.

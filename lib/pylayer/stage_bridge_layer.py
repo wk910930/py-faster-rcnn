@@ -8,11 +8,10 @@
 import caffe
 import numpy as np
 import yaml
-from datasets.transform.bbox_transform import \
-    bbox_transform_inv, bbox_compute_targets, \
-    clip_boxes, get_bbox_regression_label
 from datasets.transform.mask_transform import intersect_mask
 from fast_rcnn.config import cfg
+from fast_rcnn.bbox_transform import bbox_transform, bbox_transform_inv
+from fast_rcnn.bbox_transform import clip_boxes_mnc
 from utils.cython_bbox import bbox_overlaps
 
 
@@ -162,7 +161,7 @@ class StageBridgeLayer(caffe.Layer):
         all_rois = np.vstack(
             (all_rois, np.hstack((zeros, gt_boxes[:, :-1])))
         )
-        all_rois[:, 1:5], self._clip_keep = clip_boxes(all_rois[:, 1:5], im_info[:2])
+        all_rois[:, 1:5], self._clip_keep = clip_boxes_mnc(all_rois[:, 1:5], im_info[:2])
 
         labels, rois_out, fg_inds, keep_inds, mask_targets, top_mask_info, bbox_targets, bbox_inside_weights = \
             self._sample_output(all_rois, gt_boxes, im_info[2], gt_masks, mask_info)
@@ -201,11 +200,11 @@ class StageBridgeLayer(caffe.Layer):
         labels[len(fg_inds):] = 0
         rois = all_rois[keep_inds]
 
-        bbox_target_data = bbox_compute_targets(
+        bbox_target_data = _bbox_compute_targets(
             rois[:, 1:5], gt_boxes[gt_assignment[keep_inds], :4], normalize=True)
         bbox_target_data = np.hstack((labels[:, np.newaxis], bbox_target_data))\
             .astype(np.float32, copy=False)
-        bbox_targets, bbox_inside_weights = get_bbox_regression_label(
+        bbox_targets, bbox_inside_weights = _get_bbox_regression_labels(
             bbox_target_data, self._num_classes)
 
         scaled_rois = rois[:, 1:5] / float(im_scale)
@@ -248,8 +247,56 @@ class StageBridgeLayer(caffe.Layer):
         rois_out[:, 0] = 0
         for i in xrange(len(score_max)):
             rois_out[i, 1:5] = all_rois[i, 4*score_max[i]:4*(score_max[i]+1)]
-        rois_out[:, 1:5], _ = clip_boxes(rois_out[:, 1:5], im_info[0, :2])
+        rois_out[:, 1:5], _ = clip_boxes_mnc(rois_out[:, 1:5], im_info[0, :2])
         blobs = {
             'rois': rois_out
         }
         return blobs
+
+def _get_bbox_regression_labels(bbox_target_data, num_classes):
+    """Bounding-box regression targets (bbox_target_data) are stored in a
+    compact form N x (class, tx, ty, tw, th)
+
+    This function expands those targets into the 4-of-4*K representation used
+    by the network (i.e. only one class has non-zero targets).
+
+    Returns:
+        bbox_target (ndarray): N x 4K blob of regression targets
+        bbox_inside_weights (ndarray): N x 4K blob of loss weights
+    """
+
+    assert bbox_target_data.shape[1] == 5
+    clss = bbox_target_data[:, 0]
+    bbox_targets = np.zeros((clss.size, 4 * num_classes), dtype=np.float32)
+    bbox_inside_weights = np.zeros(bbox_targets.shape, dtype=np.float32)
+    inds = np.where(clss > 0)[0]
+    for ind in inds:
+        cls = int(clss[ind])
+        start = 4 * cls
+        end = start + 4
+        bbox_targets[ind, start:end] = bbox_target_data[ind, 1:]
+        bbox_inside_weights[ind, start:end] = cfg.TRAIN.BBOX_INSIDE_WEIGHTS
+    return bbox_targets, bbox_inside_weights
+
+def _bbox_compute_targets(ex_rois, gt_rois, normalize):
+    """
+    Compute bounding-box regression targets for an image
+    Parameters:
+    -----------
+    ex_rois: ROIs from external source (anchors or proposals)
+    gt_rois: ground truth ROIs
+    normalize: whether normalize box (since RPN doesn't need to normalize)
+
+    Returns:
+    -----------
+    Relative value for anchor or proposals
+    """
+    assert ex_rois.shape == gt_rois.shape
+
+    targets = bbox_transform(ex_rois, gt_rois)
+    if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED and normalize:
+        # Optionally normalize targets by a precomputed mean and std
+        targets = ((targets - np.array(cfg.TRAIN.BBOX_NORMALIZE_MEANS)) /
+                   np.array(cfg.TRAIN.BBOX_NORMALIZE_STDS))
+
+    return targets.astype(np.float32, copy=False)
