@@ -18,6 +18,7 @@ import _init_paths
 import caffe
 from fast_rcnn.config import cfg
 from fast_rcnn.bbox_transform import clip_boxes
+from mnc.test import im_detect
 from utils.blob import prep_im_for_blob, im_list_to_blob
 from datasets.transform.mask_transform import gpu_mask_voting
 import matplotlib.pyplot as plt
@@ -30,7 +31,6 @@ CLASSES = ('aeroplane', 'bicycle', 'bird', 'boat',
            'cow', 'diningtable', 'dog', 'horse',
            'motorbike', 'person', 'pottedplant',
            'sheep', 'sofa', 'train', 'tvmonitor')
-
 
 def parse_args():
     """Parse input arguments."""
@@ -49,51 +49,6 @@ def parse_args():
 
     args = parser.parse_args()
     return args
-
-
-def im_detect(im, net):
-    # Prepare image data blob
-    blobs = {'data': None}
-    processed_ims = []
-    im, im_scale_factors = \
-        prep_im_for_blob(im, cfg.PIXEL_MEANS, cfg.TEST.SCALES[0], cfg.TRAIN.MAX_SIZE)
-    processed_ims.append(im)
-    blobs['data'] = im_list_to_blob(processed_ims)
-    # Prepare image info blob
-    im_scales = [np.array(im_scale_factors)]
-    assert len(im_scales) == 1, 'Only single-image batch implemented'
-    im_blob = blobs['data']
-    blobs['im_info'] = np.array(
-        [[im_blob.shape[2], im_blob.shape[3], im_scales[0]]],
-        dtype=np.float32)
-    # Reshape network inputs and do forward
-    net.blobs['data'].reshape(*blobs['data'].shape)
-    net.blobs['im_info'].reshape(*blobs['im_info'].shape)
-    forward_kwargs = {
-        'data': blobs['data'].astype(np.float32, copy=False),
-        'im_info': blobs['im_info'].astype(np.float32, copy=False)
-    }
-    blobs_out = net.forward(**forward_kwargs)
-    # output we need to collect:
-    # 1. output from phase1'
-    rois_phase1 = net.blobs['rois'].data.copy()
-    masks_phase1 = net.blobs['mask_proposal'].data[...]
-    scores_phase1 = net.blobs['seg_cls_prob'].data[...]
-    # 2. output from phase2
-    rois_phase2 = net.blobs['rois_ext'].data[...]
-    masks_phase2 = net.blobs['mask_proposal_ext'].data[...]
-    scores_phase2 = net.blobs['seg_cls_prob_ext'].data[...]
-    # Boxes are in resized space, we un-scale them back
-    rois_phase1 = rois_phase1[:, 1:5] / im_scales[0]
-    rois_phase2 = rois_phase2[:, 1:5] / im_scales[0]
-    rois_phase1 = clip_boxes(rois_phase1, im.shape)
-    rois_phase2 = clip_boxes(rois_phase2, im.shape)
-    # concatenate two stages to get final network output
-    masks = np.concatenate((masks_phase1, masks_phase2), axis=0)
-    boxes = np.concatenate((rois_phase1, rois_phase2), axis=0)
-    scores = np.concatenate((scores_phase1, scores_phase2), axis=0)
-    return boxes, masks, scores
-
 
 def get_vis_dict(result_box, result_mask, img_name, cls_names, vis_thresh=0.5):
     box_for_img = []
@@ -126,7 +81,7 @@ if __name__ == '__main__':
     # Warm up for the first two images
     im = 128 * np.ones((300, 500, 3), dtype=np.float32)
     for i in xrange(2):
-        _, _, _ = im_detect(im, net)
+        _, _, _ = im_detect(net, im)
 
     im_names = ['2008_000533.jpg', '2008_000910.jpg', '2008_001602.jpg',
                 '2008_001717.jpg', '2008_008093.jpg']
@@ -137,7 +92,7 @@ if __name__ == '__main__':
         gt_image = os.path.join(demo_dir, im_name)
         im = cv2.imread(gt_image)
         start = time.time()
-        boxes, masks, seg_scores = im_detect(im, net)
+        masks, boxes, seg_scores = im_detect(net, im)
         end = time.time()
         print 'forward time %f' % (end-start)
         result_mask, result_box = gpu_mask_voting(masks, boxes, seg_scores, len(CLASSES) + 1,
