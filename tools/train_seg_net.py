@@ -17,7 +17,6 @@ import numpy as np
 import _init_paths
 from datasets.factory import get_imdb
 from fast_rcnn.config import cfg, cfg_from_file, get_output_dir
-from db.maskdb import attach_maskdb
 from mnc.train import train_net
 import caffe
 
@@ -114,6 +113,32 @@ def attach_roidb(imdb_names):
     else:
         imdb = get_imdb(imdb_names)
     return imdb, roidb
+
+def get_maskdb(imdb_name):
+
+    imdb = get_imdb(imdb_name)
+    print 'Loaded dataset `{:s}` for training'.format(imdb.name)
+    # Here set handler function. (e.g. gt_roidb in faster RCNN)
+    imdb.set_proposal_method(cfg.TRAIN.PROPOSAL_METHOD)
+    imdb.set_mask_handler(cfg.TRAIN.PROPOSAL_METHOD)
+    print 'Set proposal method: {:s}'.format(cfg.TRAIN.PROPOSAL_METHOD)
+    if cfg.TRAIN.USE_FLIPPED:
+        print 'Appending horizontally-flipped training examples...'
+        imdb.append_flipped_masks()
+        print 'done'
+    return imdb.maskdb
+
+def attach_maskdb(imdb_names):
+    """
+    only implement single maskdb now
+    """
+    maskdbs = [get_maskdb(s) for s in imdb_names.split('+')]
+    maskdb = maskdbs[0]
+    if len(maskdbs) > 1:
+        raise NotImplementedError
+    else:
+        imdb = get_imdb(imdb_names)
+    return imdb, maskdb
 
 if __name__ == '__main__':
     args = parse_args()
