@@ -9,21 +9,21 @@ import cPickle
 import os
 import scipy.io as sio
 import numpy as np
-from datasets.pascal_voc_det import pascal_voc_det
+from datasets.pascal_voc import pascal_voc
 from fast_rcnn.config import cfg
 from utils.vis_seg import vis_seg
 from voc_seg_eval import voc_eval_sds
 import scipy
 
 
-class pascal_voc_seg(pascal_voc_det):
+class pascal_voc_seg(pascal_voc):
     """
     A subclass for datasets.imdb.imdb
     This class contains information of ROIDB and MaskDB
     This class implements roidb and maskdb related functions
     """
     def __init__(self, image_set, year, devkit_path=None):
-        pascal_voc_det.__init__(self, image_set, year, devkit_path)
+        pascal_voc.__init__(self, image_set, year, devkit_path)
         self._ori_image_num = len(self._image_index)
         self._comp_id = 'comp6'
         # PASCAL specific config options
@@ -66,8 +66,15 @@ class pascal_voc_seg(pascal_voc_det):
         return gt_maskdb
 
     def _load_image_set_index(self):
-        image_set_file = os.path.join(self._data_path, self._image_set + '.txt')
-        assert os.path.exists(image_set_file), 'Path does not exist: {}'.format(image_set_file)
+        """
+        Load the indexes listed in this dataset's image set file.
+        """
+        # Example path to image set file:
+        # self._devkit_path + /VOCdevkit2007/VOC2007/ImageSets/SBD/val.txt
+        image_set_file = os.path.join(self._data_path, 'ImageSets', 'SBD',
+                                      self._image_set + '.txt')
+        assert os.path.exists(image_set_file), \
+                'Path does not exist: {}'.format(image_set_file)
         with open(image_set_file) as f:
             image_index = [x.strip() for x in f.readlines()]
         return image_index
