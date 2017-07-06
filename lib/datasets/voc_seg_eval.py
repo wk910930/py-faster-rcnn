@@ -12,7 +12,7 @@ import numpy as np
 import cv2
 import scipy.io as sio
 
-from datasets.transform.mask_transform import mask_overlap
+from mnc.mask_transform import mask_overlap
 from fast_rcnn.config import cfg
 
 def voc_ap(rec, prec, use_07_metric=False):

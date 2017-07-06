@@ -8,7 +8,7 @@
 import caffe
 import numpy as np
 import yaml
-from datasets.transform.mask_transform import intersect_mask
+from mnc.mask_transform import intersect_mask
 from fast_rcnn.config import cfg
 from fast_rcnn.bbox_transform import bbox_transform, bbox_transform_inv
 from fast_rcnn.bbox_transform import clip_boxes_mnc

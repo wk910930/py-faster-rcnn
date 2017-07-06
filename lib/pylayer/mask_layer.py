@@ -8,7 +8,7 @@
 import caffe
 import cv2
 import numpy as np
-from datasets.transform.mask_transform import mask_overlap
+from mnc.mask_transform import mask_overlap
 from fast_rcnn.config import cfg
 
 

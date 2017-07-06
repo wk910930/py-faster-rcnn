@@ -12,7 +12,7 @@ import numpy.random as npr
 from fast_rcnn.config import cfg
 from fast_rcnn.bbox_transform import bbox_transform
 from rpn.generate_anchors import generate_anchors
-from datasets.transform.mask_transform import intersect_mask
+from mnc.mask_transform import intersect_mask
 from utils.cython_bbox import bbox_overlaps
 
 

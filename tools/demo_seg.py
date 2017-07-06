@@ -20,7 +20,7 @@ from fast_rcnn.config import cfg
 from fast_rcnn.bbox_transform import clip_boxes
 from mnc.test import im_detect
 from utils.blob import prep_im_for_blob, im_list_to_blob
-from datasets.transform.mask_transform import gpu_mask_voting
+from mnc.mask_transform import gpu_mask_voting
 import matplotlib.pyplot as plt
 from utils.vis_seg import _convert_pred_to_image, _get_voc_color_map
 from PIL import Image

@@ -19,7 +19,7 @@ from fast_rcnn.config import cfg, get_output_dir
 from fast_rcnn.bbox_transform import bbox_transform_inv
 from fast_rcnn.bbox_transform import clip_boxes
 from utils.blob import prep_im_for_blob, im_list_to_blob, pred_rois_for_blob
-from datasets.transform.mask_transform import cpu_mask_voting, gpu_mask_voting
+from mnc.mask_transform import cpu_mask_voting, gpu_mask_voting
 
 def im_detect(net, im):
     # Prepare image data blob
