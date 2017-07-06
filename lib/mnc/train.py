@@ -22,7 +22,7 @@ class SolverWrapper(object):
         This wrapper gives us control over he snapshotting process, which we
         use to unnormalize the learned bounding-box regression weights.
     """
-    def __init__(self, solver_prototxt, roidb, maskdb, output_dir, imdb,
+    def __init__(self, solver_prototxt, roidb, maskdb, output_dir,
                  pretrained_model=None):
         self.output_dir = output_dir
 
@@ -128,6 +128,14 @@ def get_training_roidb(imdb):
 
     return imdb.roidb
 
+def get_training_maskdb(imdb):
+    if cfg.TRAIN.USE_FLIPPED:
+        print 'Appending horizontally-flipped training examples...'
+        imdb.append_flipped_masks()
+        print 'done'
+
+    return imdb.maskdb
+
 def filter_roidb(roidb):
     """Remove roidb entries that have no usable RoIs."""
 
@@ -152,12 +160,12 @@ def filter_roidb(roidb):
                                                        num, num_after)
     return filtered_roidb
 
-def train_net(solver_prototxt, roidb, maskdb, output_dir, imdb,
+def train_net(solver_prototxt, roidb, maskdb, output_dir,
               pretrained_model=None, max_iters=40000):
     """Train a Fast R-CNN network."""
 
     roidb = filter_roidb(roidb)
-    sw = SolverWrapper(solver_prototxt, roidb, maskdb, output_dir, imdb,
+    sw = SolverWrapper(solver_prototxt, roidb, maskdb, output_dir,
                        pretrained_model=pretrained_model)
 
     print 'Solving...'
