@@ -13,5 +13,6 @@ TRAIN:
 TEST:
   SCALES: !!python/tuple [600,]
   MAX_SIZE: 1000
+  HAS_RPN: True
   USE_MASK_MERGE: True
   USE_GPU_MASK_MERGE: True
