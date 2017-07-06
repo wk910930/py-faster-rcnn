@@ -105,11 +105,15 @@ if __name__ == '__main__':
         inst_img, cls_img = _convert_pred_to_image(img_width, img_height, pred_dict)
         color_map = _get_voc_color_map()
         target_cls_file = os.path.join(demo_dir, 'cls_' + im_name)
+        target_inst_file = os.path.join(demo_dir, 'inst_' + im_name)
         cls_out_img = np.zeros((img_height, img_width, 3))
+        inst_out_img = np.zeros((img_height, img_width, 3))
         for i in xrange(img_height):
             for j in xrange(img_width):
                 cls_out_img[i][j] = color_map[cls_img[i][j]][::-1]
+                inst_out_img[i][j] = color_map[inst_img[i][j]][::-1]
         cv2.imwrite(target_cls_file, cls_out_img)
+        cv2.imwrite(target_inst_file, inst_out_img)
         
         background = Image.open(gt_image)
         mask = Image.open(target_cls_file)
@@ -138,4 +142,3 @@ if __name__ == '__main__':
 
         fig.savefig(os.path.join(demo_dir, im_name[:-4]+'.png'))
         os.remove(superimpose_name)
-        os.remove(target_cls_file)
