@@ -104,8 +104,8 @@ if __name__ == '__main__':
         
         inst_img, cls_img = _convert_pred_to_image(img_width, img_height, pred_dict)
         color_map = _get_voc_color_map()
-        target_cls_file = os.path.join(demo_dir, 'cls_' + im_name)
-        target_inst_file = os.path.join(demo_dir, 'inst_' + im_name)
+        target_cls_file = os.path.join(demo_dir, im_name + '_cls.png')
+        target_inst_file = os.path.join(demo_dir, im_name + '_inst.png')
         cls_out_img = np.zeros((img_height, img_width, 3))
         inst_out_img = np.zeros((img_height, img_width, 3))
         for i in xrange(img_height):
