@@ -124,6 +124,10 @@ def _convert_pred_to_image(img_width, img_height, pred_dict):
         cls_img[box[1]:box[3]+1, box[2]-1:box[2]+1] = 150
         cls_img[box[1]-1:box[1]+1, box[0]:box[2]+1] = 150
         cls_img[box[3]-1:box[3]+1, box[0]:box[2]+1] = 150
+        inst_img[box[1]:box[3]+1, box[0]-1:box[0]+1] = 150
+        inst_img[box[1]:box[3]+1, box[2]-1:box[2]+1] = 150
+        inst_img[box[1]-1:box[1]+1, box[0]:box[2]+1] = 150
+        inst_img[box[3]-1:box[3]+1, box[0]:box[2]+1] = 150
 
     inst_img = inst_img.astype(int)
     cls_img = cls_img.astype(int)
