@@ -83,12 +83,16 @@ def test_net(net, imdb, max_per_image=100):
 
     output_dir = get_output_dir(imdb, net)
 
+    # timers
     _t = {'im_detect': Timer(), 'misc': Timer()}
+
     for i in xrange(num_images):
         im = cv2.imread(imdb.image_path_at(i))
         _t['im_detect'].tic()
         masks, boxes, seg_scores = im_detect(net, im)
         _t['im_detect'].toc()
+
+        _t['misc'].tic()
         if not cfg.TEST.USE_MASK_MERGE:
             for j in xrange(1, imdb.num_classes):
                 inds = np.where(seg_scores[:, j] > thresh[j])[0]
@@ -124,9 +128,11 @@ def test_net(net, imdb, max_per_image=100):
             for j in xrange(1, imdb.num_classes):
                 all_boxes[j][i] = result_box[j-1]
                 all_masks[j][i] = result_mask[j-1]
+        _t['misc'].toc()
 
-        print 'process image %d/%d, forward average time %f' % (i, num_images,
-                                                                _t['im_detect'].average_time)
+        print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
+              .format(i + 1, num_images, _t['im_detect'].average_time,
+                      _t['misc'].average_time)
 
     for j in xrange(1, imdb.num_classes):
         for i in xrange(num_images):
