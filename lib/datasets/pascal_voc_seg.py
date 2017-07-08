@@ -33,11 +33,11 @@ class pascal_voc_seg(pascal_voc):
                        'use_diff': False,
                        'matlab_eval': False,
                        'rpn_file': None}
-        self._data_path = os.path.join(self._devkit_path, 'VOC' + self._year)
+        self._data_path = os.path.join(self._devkit_path, 'VOC' + self._year, 'SBD')
         self._roidb_path = os.path.join(self.cache_path, 'voc_2012_' + image_set + '_mcg_maskdb')
 
     def image_path_at(self, i):
-        image_path = os.path.join(self._data_path, 'SBD', 'img', self._image_index[i] + self._image_ext)
+        image_path = os.path.join(self._data_path, 'img', self._image_index[i] + self._image_ext)
         assert os.path.exists(image_path), 'Path does not exist: {}'.format(image_path)
         return image_path
 
@@ -83,7 +83,7 @@ class pascal_voc_seg(pascal_voc):
         """
         # Example path to image set file:
         # self._devkit_path + /VOCdevkit2007/VOC2007/SBD/val.txt
-        image_set_file = os.path.join(self._data_path, 'SBD',
+        image_set_file = os.path.join(self._data_path,
                                       self._image_set + '.txt')
         assert os.path.exists(image_set_file), \
                 'Path does not exist: {}'.format(image_set_file)
@@ -95,14 +95,14 @@ class pascal_voc_seg(pascal_voc):
         if index % 1000 == 0:
             print '%d / %d' % (index, len(self._image_index))
         image_name = self._image_index[index]
-        inst_file_name = os.path.join(self._data_path,  'SBD', 'inst', image_name + '.mat')
+        inst_file_name = os.path.join(self._data_path, 'inst', image_name + '.mat')
         gt_inst_mat = scipy.io.loadmat(inst_file_name)
         gt_inst_data = gt_inst_mat['GTinst']['Segmentation'][0][0]
         unique_inst = np.unique(gt_inst_data)
         background_ind = np.where(unique_inst == 0)[0]
         unique_inst = np.delete(unique_inst, background_ind)
 
-        cls_file_name = os.path.join(self._data_path,  'SBD', 'cls', image_name + '.mat')
+        cls_file_name = os.path.join(self._data_path, 'cls', image_name + '.mat')
         gt_cls_mat = scipy.io.loadmat(cls_file_name)
         gt_cls_data = gt_cls_mat['GTcls']['Segmentation'][0][0]
 
@@ -137,14 +137,14 @@ class pascal_voc_seg(pascal_voc):
         if index % 1000 == 0:
             print '%d / %d' % (index, len(self._image_index))
         image_name = self._image_index[index]
-        inst_file_name = os.path.join(self._data_path, 'SBD', 'inst', image_name + '.mat')
+        inst_file_name = os.path.join(self._data_path, 'inst', image_name + '.mat')
         gt_inst_mat = scipy.io.loadmat(inst_file_name)
         gt_inst_data = gt_inst_mat['GTinst']['Segmentation'][0][0]
         unique_inst = np.unique(gt_inst_data)
         background_ind = np.where(unique_inst == 0)[0]
         unique_inst = np.delete(unique_inst, background_ind)
         gt_roidb = gt_roidbs[index]
-        cls_file_name = os.path.join(self._data_path, 'SBD',  'cls', image_name + '.mat')
+        cls_file_name = os.path.join(self._data_path,  'cls', image_name + '.mat')
         gt_cls_mat = scipy.io.loadmat(cls_file_name)
         gt_cls_data = gt_cls_mat['GTcls']['Segmentation'][0][0]
         gt_masks = []
@@ -231,7 +231,7 @@ class pascal_voc_seg(pascal_voc):
         return boxes, all_masks
 
     def _py_evaluate_segmentation(self, output_dir):
-        imageset_file = os.path.join(self._data_path, 'SBD' ,self._image_set + '.txt')
+        imageset_file = os.path.join(self._data_path ,self._image_set + '.txt')
         cache_dir = os.path.join(self._devkit_path, 'annotations_cache')
         aps = []
         # define this as true according to SDS's evaluation protocol
@@ -245,7 +245,7 @@ class pascal_voc_seg(pascal_voc):
                 continue
             det_filename = os.path.join(output_dir, cls + '_det.pkl')
             seg_filename = os.path.join(output_dir, cls + '_seg.pkl')
-            ap = voc_eval_sds(det_filename, seg_filename, self._data_path, 'SBD',
+            ap = voc_eval_sds(det_filename, seg_filename, self._data_path,
                               imageset_file, cls, cache_dir, self._classes, ov_thresh=0.5)
             aps += [ap]
             print('AP for {} = {:.2f}'.format(cls, ap*100))
@@ -257,7 +257,7 @@ class pascal_voc_seg(pascal_voc):
                 continue
             det_filename = os.path.join(output_dir, cls + '_det.pkl')
             seg_filename = os.path.join(output_dir, cls + '_seg.pkl')
-            ap = voc_eval_sds(det_filename, seg_filename, self._data_path, 'SBD',
+            ap = voc_eval_sds(det_filename, seg_filename, self._data_path,
                               imageset_file, cls, cache_dir, self._classes, ov_thresh=0.7)
             aps += [ap]
             print('AP for {} = {:.2f}'.format(cls, ap*100))
