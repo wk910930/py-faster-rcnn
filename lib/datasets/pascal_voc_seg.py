@@ -231,8 +231,7 @@ class pascal_voc_seg(pascal_voc):
         return boxes, all_masks
 
     def _py_evaluate_segmentation(self, output_dir):
-        gt_dir = self._data_path
-        imageset_file = os.path.join(gt_dir, 'SBD' ,self._image_set + '.txt')
+        imageset_file = os.path.join(self._data_path, 'SBD' ,self._image_set + '.txt')
         cache_dir = os.path.join(self._devkit_path, 'annotations_cache')
         aps = []
         # define this as true according to SDS's evaluation protocol
@@ -246,7 +245,7 @@ class pascal_voc_seg(pascal_voc):
                 continue
             det_filename = os.path.join(output_dir, cls + '_det.pkl')
             seg_filename = os.path.join(output_dir, cls + '_seg.pkl')
-            ap = voc_eval_sds(det_filename, seg_filename, gt_dir,
+            ap = voc_eval_sds(det_filename, seg_filename, self._data_path, 'SBD',
                               imageset_file, cls, cache_dir, self._classes, ov_thresh=0.5)
             aps += [ap]
             print('AP for {} = {:.2f}'.format(cls, ap*100))
@@ -258,7 +257,7 @@ class pascal_voc_seg(pascal_voc):
                 continue
             det_filename = os.path.join(output_dir, cls + '_det.pkl')
             seg_filename = os.path.join(output_dir, cls + '_seg.pkl')
-            ap = voc_eval_sds(det_filename, seg_filename, gt_dir,
+            ap = voc_eval_sds(det_filename, seg_filename, self._data_path, 'SBD',
                               imageset_file, cls, cache_dir, self._classes, ov_thresh=0.7)
             aps += [ap]
             print('AP for {} = {:.2f}'.format(cls, ap*100))
