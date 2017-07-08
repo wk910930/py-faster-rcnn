@@ -82,8 +82,8 @@ class pascal_voc_seg(pascal_voc):
         Load the indexes listed in this dataset's image set file.
         """
         # Example path to image set file:
-        # self._devkit_path + /VOCdevkit2007/VOC2007/ImageSets/SBD/val.txt
-        image_set_file = os.path.join(self._data_path, 'ImageSets', 'SBD',
+        # self._devkit_path + /VOCdevkit2007/VOC2007/SBD/val.txt
+        image_set_file = os.path.join(self._data_path, 'SBD',
                                       self._image_set + '.txt')
         assert os.path.exists(image_set_file), \
                 'Path does not exist: {}'.format(image_set_file)
@@ -232,7 +232,7 @@ class pascal_voc_seg(pascal_voc):
 
     def _py_evaluate_segmentation(self, output_dir):
         gt_dir = self._data_path
-        imageset_file = os.path.join(gt_dir, self._image_set + '.txt')
+        imageset_file = os.path.join(gt_dir, 'SBD' ,self._image_set + '.txt')
         cache_dir = os.path.join(self._devkit_path, 'annotations_cache')
         aps = []
         # define this as true according to SDS's evaluation protocol
