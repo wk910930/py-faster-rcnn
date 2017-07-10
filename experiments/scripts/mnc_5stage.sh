@@ -11,7 +11,7 @@ set -e
 export PYTHONUNBUFFERED="True"
 
 GPU_ID=$1
-NET=$2
+NET=VGG16
 NET_lc=${NET,,}
 PT_DIR="pascal_voc"
 ITERS=25000
