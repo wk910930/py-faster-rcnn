@@ -35,6 +35,7 @@ def validate_boxes(boxes, width=0, height=0):
     assert (y2 < height).all()
 
 def filter_small_boxes(boxes, min_size):
+    """Remove all boxes with any side smaller than min_size."""
     w = boxes[:, 2] - boxes[:, 0]
     h = boxes[:, 3] - boxes[:, 1]
     keep = np.where((w >= min_size) & (h > min_size))[0]
