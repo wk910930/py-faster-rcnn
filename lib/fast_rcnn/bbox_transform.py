@@ -162,3 +162,25 @@ def cal_crop_shape(boxes, height, width, padding=0):
 
     crop_shape = np.array([crop_x1, crop_y1, crop_x2, crop_y2])
     return crop_shape
+
+def perturbate_boxes(boxes, amplitude=0.1):
+    """
+    Adjust boxes by margin perturbation
+    """
+    assert boxes.shape[0] > 0
+
+    perturbated_boxes = boxes.copy()
+
+    widths = boxes[:, 2] - boxes[:, 0] + 1.0
+    heights = boxes[:, 3] - boxes[:, 1] + 1.0
+
+    # x1
+    perturbated_boxes[:, 0::4] += (widths[:, np.newaxis] * np.random.uniform(-amplitude, amplitude, (perturbated_boxes.shape[0], 1)))
+    # y1
+    perturbated_boxes[:, 1::4] += (heights[:, np.newaxis] * np.random.uniform(-amplitude, amplitude, (perturbated_boxes.shape[0], 1)))
+    # x2
+    perturbated_boxes[:, 2::4] += (widths[:, np.newaxis] * np.random.uniform(-amplitude, amplitude, (perturbated_boxes.shape[0], 1)))
+    # y2
+    perturbated_boxes[:, 3::4] += (heights[:, np.newaxis] * np.random.uniform(-amplitude, amplitude, (perturbated_boxes.shape[0], 1)))
+
+    return perturbated_boxes
