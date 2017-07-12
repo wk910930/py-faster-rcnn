@@ -468,9 +468,9 @@ layer {
   bottom: 'im_info'
   top: 'rois'
   python_param {
-    module: 'pylayer.proposal_layer'
+    module: 'rpn.proposal_layer'
     layer: 'ProposalLayer'
-    param_str: "{'feat_stride': 16, 'gradient_scale': 1}"
+    param_str: "'feat_stride': 16"
   }
 }
 

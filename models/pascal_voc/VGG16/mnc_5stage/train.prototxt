@@ -482,15 +482,11 @@ layer {
   bottom: 'rpn_cls_prob_reshape'
   bottom: 'rpn_bbox_pred'
   bottom: 'im_info'
-  propagate_down: 0
-  propagate_down: 1
-  propagate_down: 0
   top: 'rpn_rois'
-  top: 'rpn_rois_index'
   python_param {
-    module: 'pylayer.proposal_layer'
+    module: 'rpn.proposal_layer'
     layer: 'ProposalLayer'
-    param_str: "{ 'feat_stride': 16, 'use_clip': 1, 'clip_base': 512 }"
+    param_str: "'feat_stride': 16"
   }
 }
 
@@ -502,9 +498,7 @@ layer {
   bottom: 'im_info'
   bottom: 'gt_masks'
   bottom: 'mask_info'
-  bottom: 'rpn_rois_index'
   propagate_down: 1
-  propagate_down: 0
   propagate_down: 0
   propagate_down: 0
   propagate_down: 0
@@ -517,8 +511,6 @@ layer {
   top: 'mask_targets'
   top: 'mask_weight'
   top: 'gt_masks_info'
-  top: 'fg_inds'
-  top: 'bg_inds'
   python_param {
     module: 'pylayer.proposal_target_layer'
     layer: 'ProposalTargetLayer'
@@ -532,8 +524,6 @@ layer {
   bottom: 'rpn_cls_score'
   bottom: 'gt_boxes'
   bottom: 'im_info'
-  bottom: 'fg_inds'
-  bottom: 'bg_inds'
   top: 'rpn_labels'
   top: 'rpn_bbox_targets'
   top: 'rpn_bbox_inside_weights'

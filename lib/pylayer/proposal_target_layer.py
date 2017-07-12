@@ -46,11 +46,6 @@ class ProposalTargetLayer(caffe.Layer):
         self._top_name_map['mask_weight'] = 6
         top[7].reshape(1, 4)
         self._top_name_map['gt_masks_info'] = 7
-        if cfg.TRAIN.MIX_INDEX:
-            top[8].reshape(1, 4)
-            self._top_name_map['fg_inds'] = 8
-            top[9].reshape(1, 4)
-            self._top_name_map['bg_inds'] = 9
 
     def reshape(self, bottom, top):
         """Reshaping happens during the call to forward."""
@@ -89,16 +84,6 @@ class ProposalTargetLayer(caffe.Layer):
         for blob_name, blob in blobs.iteritems():
             top[self._top_name_map[blob_name]].reshape(*blob.shape)
             top[self._top_name_map[blob_name]].data[...] = blob.astype(np.float32, copy=False)
-
-        if cfg.TRAIN.MIX_INDEX:
-            all_rois_index = bottom[5].data
-            fg_inds = fg_inds[fg_inds < all_rois_index.shape[1]].astype(int)
-            fg_inds = all_rois_index[0, fg_inds]
-            bg_inds = all_rois_index[0, bg_inds.astype(int)]
-            top[self._top_name_map['fg_inds']].reshape(*fg_inds.shape)
-            top[self._top_name_map['fg_inds']].data[...] = fg_inds
-            top[self._top_name_map['bg_inds']].reshape(*bg_inds.shape)
-            top[self._top_name_map['bg_inds']].data[...] = bg_inds
 
     def backward(self, top, propagate_down, bottom):
         if propagate_down[0]:
