@@ -18,10 +18,6 @@ import datasets.ds_utils as ds_utils
 from nms.nms_wrapper import nms
 
 
-DEBUG = False
-PRINT_GRADIENT = 1
-
-
 class ProposalLayer(caffe.Layer):
     """
     Outputs object detection proposals by applying estimated bounding-box
