@@ -103,7 +103,8 @@ def parse_args():
                         help='model to test',
                         default=None, type=str, required=True)
     parser.add_argument('--cfg', dest='cfg_file',
-                        help='optional config file', default=None, type=str)
+                        help='optional config file',
+                        default=None, type=str, required=True)
 
     args = parser.parse_args()
 
