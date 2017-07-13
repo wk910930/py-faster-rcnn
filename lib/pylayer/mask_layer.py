@@ -64,7 +64,6 @@ class MaskLayer(caffe.Layer):
         # 2. Calculate region overlap
         #    Since the target gt mask may have different size
         #    We need to resize predicted masks into different sizes
-        mask_size = cfg.MASK_SIZE
         for i in xrange(num_mask_pred):
             # if the bounding box is itself background
             if gt_masks_info[i][0] == -1:
@@ -73,7 +72,7 @@ class MaskLayer(caffe.Layer):
             else:
                 info = gt_masks_info[i]
                 gt_mask = gt_masks[info[0]][0:info[1], 0:info[2]]
-                ex_mask = mask_pred[i].reshape((mask_size, mask_size))
+                ex_mask = mask_pred[i].reshape((cfg.MASK_SIZE, cfg.MASK_SIZE))
                 ex_box = np.round(info[4:8]).astype(int)
                 gt_box = np.round(info[8:12]).astype(int)
                 # resize to large gt_masks, note cv2.resize is column first
