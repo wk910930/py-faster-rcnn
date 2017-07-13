@@ -10,6 +10,7 @@ TRAIN:
   SNAPSHOT_ITERS: 5000
   BATCH_SIZE: 64
   HAS_RPN: True
+  # mask_layer.py
   FG_SEG_THRESH: 0.5
   # proposal_layer.py
   RPN_NMS_THRESH: 0.7
