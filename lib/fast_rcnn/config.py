@@ -44,6 +44,7 @@ __C.TRAIN.MAX_SIZE = 1000
 __C.TRAIN.IMS_PER_BATCH = 2
 
 # Minibatch size (number of regions of interest [ROIs])
+# of training the classifier and the regressor of the detector
 __C.TRAIN.BATCH_SIZE = 128
 
 # Fraction of minibatch that is labeled foreground (i.e. class > 0)
@@ -98,7 +99,7 @@ __C.TRAIN.BBOX_NORMALIZE_STDS = (0.1, 0.1, 0.2, 0.2)
 # Train using these proposals
 __C.TRAIN.PROPOSAL_METHOD = 'selective_search'
 
-# Make minibatches from images that have similar aspect ratios (i.e. both
+# Make mini-batches from images that have similar aspect ratios (i.e. both
 # tall and thin or both short and wide) in order to avoid wasting computation
 # on zero-padding.
 __C.TRAIN.ASPECT_GROUPING = True
@@ -109,7 +110,7 @@ __C.TRAIN.HAS_RPN = False
 __C.TRAIN.RPN_POSITIVE_OVERLAP = 0.7
 # IOU < thresh: negative example
 __C.TRAIN.RPN_NEGATIVE_OVERLAP = 0.3
-# If an anchor statisfied by positive and negative conditions set to negative
+# If an anchor satisfied by positive and negative conditions set to negative
 __C.TRAIN.RPN_CLOBBER_POSITIVES = False
 # Max number of foreground examples
 __C.TRAIN.RPN_FG_FRACTION = 0.5
@@ -162,7 +163,7 @@ __C.TEST.SOFT_NMS = False
 __C.TEST.SOFT_NMS_METHOD = 1
 
 # Experimental: treat the (K+1) units in the cls_score layer as linear
-# predictors (trained, eg, with one-vs-rest SVMs).
+# predictors (trained, e.g., with one-vs-rest SVMs).
 __C.TEST.SVM = False
 
 # Test using bounding-box regressors
