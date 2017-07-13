@@ -93,6 +93,53 @@ class ProposalTargetLayer(caffe.Layer):
             valid_bot_inds = self._keep_ind[valid_inds].astype(int)
             bottom[0].diff[valid_bot_inds, :] = top[0].diff[valid_inds, :]
 
+def _get_bbox_regression_labels(bbox_target_data, num_classes):
+    """Bounding-box regression targets (bbox_target_data) are stored in a
+    compact form N x (class, tx, ty, tw, th)
+
+    This function expands those targets into the 4-of-4*K representation used
+    by the network (i.e. only one class has non-zero targets).
+
+    Returns:
+        bbox_target (ndarray): N x 4K blob of regression targets
+        bbox_inside_weights (ndarray): N x 4K blob of loss weights
+    """
+
+    assert bbox_target_data.shape[1] == 5
+    clss = bbox_target_data[:, 0]
+    bbox_targets = np.zeros((clss.size, 4 * num_classes), dtype=np.float32)
+    bbox_inside_weights = np.zeros(bbox_targets.shape, dtype=np.float32)
+    inds = np.where(clss > 0)[0]
+    for ind in inds:
+        cls = int(clss[ind])
+        start = 4 * cls
+        end = start + 4
+        bbox_targets[ind, start:end] = bbox_target_data[ind, 1:]
+        bbox_inside_weights[ind, start:end] = cfg.TRAIN.BBOX_INSIDE_WEIGHTS
+    return bbox_targets, bbox_inside_weights
+
+def _bbox_compute_targets(ex_rois, gt_rois, normalize):
+    """
+    Compute bounding-box regression targets for an image
+    Parameters:
+    -----------
+    ex_rois: ROIs from external source (anchors or proposals)
+    gt_rois: ground truth ROIs
+    normalize: whether normalize box (since RPN doesn't need to normalize)
+
+    Returns:
+    -----------
+    Relative value for anchor or proposals
+    """
+    assert ex_rois.shape == gt_rois.shape
+
+    targets = bbox_transform(ex_rois, gt_rois)
+    if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED and normalize:
+        # Optionally normalize targets by a precomputed mean and std
+        targets = ((targets - np.array(cfg.TRAIN.BBOX_NORMALIZE_MEANS)) /
+                   np.array(cfg.TRAIN.BBOX_NORMALIZE_STDS))
+
+    return targets.astype(np.float32, copy=False)
 
 def _sample_rois(all_rois, gt_boxes, rois_per_image, num_classes, gt_masks, im_scale, mask_info):
     """
@@ -192,51 +239,3 @@ def _sample_rois(all_rois, gt_boxes, rois_per_image, num_classes, gt_masks, im_s
     blobs['gt_masks_info'] = top_mask_info
 
     return blobs, fg_inds, bg_inds, keep_inds
-
-def _get_bbox_regression_labels(bbox_target_data, num_classes):
-    """Bounding-box regression targets (bbox_target_data) are stored in a
-    compact form N x (class, tx, ty, tw, th)
-
-    This function expands those targets into the 4-of-4*K representation used
-    by the network (i.e. only one class has non-zero targets).
-
-    Returns:
-        bbox_target (ndarray): N x 4K blob of regression targets
-        bbox_inside_weights (ndarray): N x 4K blob of loss weights
-    """
-
-    assert bbox_target_data.shape[1] == 5
-    clss = bbox_target_data[:, 0]
-    bbox_targets = np.zeros((clss.size, 4 * num_classes), dtype=np.float32)
-    bbox_inside_weights = np.zeros(bbox_targets.shape, dtype=np.float32)
-    inds = np.where(clss > 0)[0]
-    for ind in inds:
-        cls = int(clss[ind])
-        start = 4 * cls
-        end = start + 4
-        bbox_targets[ind, start:end] = bbox_target_data[ind, 1:]
-        bbox_inside_weights[ind, start:end] = cfg.TRAIN.BBOX_INSIDE_WEIGHTS
-    return bbox_targets, bbox_inside_weights
-
-def _bbox_compute_targets(ex_rois, gt_rois, normalize):
-    """
-    Compute bounding-box regression targets for an image
-    Parameters:
-    -----------
-    ex_rois: ROIs from external source (anchors or proposals)
-    gt_rois: ground truth ROIs
-    normalize: whether normalize box (since RPN doesn't need to normalize)
-
-    Returns:
-    -----------
-    Relative value for anchor or proposals
-    """
-    assert ex_rois.shape == gt_rois.shape
-
-    targets = bbox_transform(ex_rois, gt_rois)
-    if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED and normalize:
-        # Optionally normalize targets by a precomputed mean and std
-        targets = ((targets - np.array(cfg.TRAIN.BBOX_NORMALIZE_MEANS)) /
-                   np.array(cfg.TRAIN.BBOX_NORMALIZE_STDS))
-
-    return targets.astype(np.float32, copy=False)
