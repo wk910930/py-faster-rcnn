@@ -152,10 +152,9 @@ class StageBridgeLayer(caffe.Layer):
         labels[len(fg_inds):] = 0
         rois = all_rois[keep_inds]
 
-        bbox_target_data = _bbox_compute_targets(
-            rois[:, 1:5], gt_boxes[gt_assignment[keep_inds], :4], normalize=True)
-        bbox_target_data = np.hstack((labels[:, np.newaxis], bbox_target_data))\
-            .astype(np.float32, copy=False)
+        bbox_target_data = _compute_targets(
+        rois[:, 1:5], gt_boxes[gt_assignment[keep_inds], :4], labels)
+
         bbox_targets, bbox_inside_weights = _get_bbox_regression_labels(
             bbox_target_data, self._num_classes)
 
@@ -230,25 +229,17 @@ def _get_bbox_regression_labels(bbox_target_data, num_classes):
         bbox_inside_weights[ind, start:end] = cfg.TRAIN.BBOX_INSIDE_WEIGHTS
     return bbox_targets, bbox_inside_weights
 
-def _bbox_compute_targets(ex_rois, gt_rois, normalize):
-    """
-    Compute bounding-box regression targets for an image
-    Parameters:
-    -----------
-    ex_rois: ROIs from external source (anchors or proposals)
-    gt_rois: ground truth ROIs
-    normalize: whether normalize box (since RPN doesn't need to normalize)
+def _compute_targets(ex_rois, gt_rois, labels):
+    """Compute bounding-box regression targets for an image."""
 
-    Returns:
-    -----------
-    Relative value for anchor or proposals
-    """
-    assert ex_rois.shape == gt_rois.shape
+    assert ex_rois.shape[0] == gt_rois.shape[0]
+    assert ex_rois.shape[1] == 4
+    assert gt_rois.shape[1] == 4
 
     targets = bbox_transform(ex_rois, gt_rois)
-    if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED and normalize:
-        # Optionally normalize targets by a precomputed mean and std
-        targets = ((targets - np.array(cfg.TRAIN.BBOX_NORMALIZE_MEANS)) /
-                   np.array(cfg.TRAIN.BBOX_NORMALIZE_STDS))
-
-    return targets.astype(np.float32, copy=False)
+    if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
+        # Optionally normalize targets by a precomputed mean and stdev
+        targets = ((targets - np.array(cfg.TRAIN.BBOX_NORMALIZE_MEANS))
+                / np.array(cfg.TRAIN.BBOX_NORMALIZE_STDS))
+    return np.hstack(
+            (labels[:, np.newaxis], targets)).astype(np.float32, copy=False)
