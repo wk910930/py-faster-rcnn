@@ -29,9 +29,6 @@ class StageBridgeLayer(caffe.Layer):
         # bottom 2 is ~ n * (1+c) bbox scores (seg classification)
         self._phase = str(self.phase)
         if self._phase == 'TRAIN':
-            self._use_clip = layer_params['use_clip']
-            self._clip_denominator = float(layer_params.get('clip_base', 64))
-            self._clip_thresh = 1.0 / self._clip_denominator
             self._feat_stride = layer_params['feat_stride']
             self._num_classes = layer_params['num_classes']
 
@@ -65,6 +62,10 @@ class StageBridgeLayer(caffe.Layer):
         # reshape happens during forward
         pass
 
+    def backward(self, top, propagate_down, bottom):
+        """This layer does not propagate gradients."""
+        pass
+
     def forward(self, bottom, top):
         if str(self.phase) == 'TRAIN':
             blobs = self.forward_train(bottom, top)
@@ -77,55 +78,6 @@ class StageBridgeLayer(caffe.Layer):
         for blob_name, blob in blobs.iteritems():
             top[self._top_name_map[blob_name]].reshape(*blob.shape)
             top[self._top_name_map[blob_name]].data[...] = blob.astype(np.float32, copy=False)
-
-    def backward(self, top, propagate_down, bottom):
-        """
-        Description:
-            We need to implement bp for 2 bottoms:
-            The top diff is x_new, y_new, w_new, h_new
-        """
-        deltas = bottom[1].data
-        dfdxc = top[0].diff[:, 1]
-        dfdyc = top[0].diff[:, 2]
-        dfdw = top[0].diff[:, 3]
-        dfdh = top[0].diff[:, 4]
-        W_old = bottom[0].data[:, 2] - bottom[0].data[:, 0]
-        H_old = bottom[0].data[:, 3] - bottom[0].data[:, 1]
-
-        if propagate_down[0]:
-            bottom[0].diff.fill(0.)
-            for ind, i in enumerate(self._keep_inds):
-                if i >= bottom[0].diff.shape[0] or self._bbox_reg_labels[i] == 0:
-                    continue
-                delta_x = deltas[i, 4*self._bbox_reg_labels[i]]
-                delta_y = deltas[i, 4*self._bbox_reg_labels[i]+1]
-                delta_w = deltas[i, 4*self._bbox_reg_labels[i]+2]
-                delta_h = deltas[i, 4*self._bbox_reg_labels[i]+3]
-                bottom[0].diff[i, 1] = dfdxc[ind]
-                bottom[0].diff[i, 2] = dfdyc[ind]
-                bottom[0].diff[i, 3] = dfdw[ind] * (delta_x + np.exp(delta_w))
-                bottom[0].diff[i, 4] = dfdh[ind] * (delta_y + np.exp(delta_h))
-
-        if propagate_down[1]:
-            bottom[1].diff.fill(0.)
-            for ind, i in enumerate(self._keep_inds):
-                if i >= bottom[1].diff.shape[0] or i not in self._clip_keep or self._bbox_reg_labels[i] == 0:
-                    continue
-                delta_w = deltas[i, 4*self._bbox_reg_labels[i]+2]
-                delta_h = deltas[i, 4*self._bbox_reg_labels[i]+3]
-                bottom[1].diff[i, 4*self._bbox_reg_labels[i]] = dfdxc[ind] * W_old[i]
-                bottom[1].diff[i, 4*self._bbox_reg_labels[i]+1] = dfdyc[ind] * H_old[i]
-                bottom[1].diff[i, 4*self._bbox_reg_labels[i]+2] = dfdw[ind] * np.exp(delta_w) * W_old[i]
-                bottom[1].diff[i, 4*self._bbox_reg_labels[i]+3] = dfdh[ind] * np.exp(delta_h) * H_old[i]
-                if self._use_clip:
-                    bottom[1].diff[i, 4*self._bbox_reg_labels[i]] = np.minimum(np.maximum(
-                        bottom[1].diff[i, 4*self._bbox_reg_labels[i]], -self._clip_thresh), self._clip_thresh)
-                    bottom[1].diff[i, 4*self._bbox_reg_labels[i]+1] = np.minimum(np.maximum(
-                        bottom[1].diff[i, 4*self._bbox_reg_labels[i]+1], -self._clip_thresh), self._clip_thresh)
-                    bottom[1].diff[i, 4*self._bbox_reg_labels[i]+2] = np.minimum(np.maximum(
-                        bottom[1].diff[i, 4*self._bbox_reg_labels[i]+2], -self._clip_thresh), self._clip_thresh)
-                    bottom[1].diff[i, 4*self._bbox_reg_labels[i]+3] = np.minimum(np.maximum(
-                        bottom[1].diff[i, 4*self._bbox_reg_labels[i]+3], -self._clip_thresh), self._clip_thresh)
 
     def forward_train(self, bottom, top):
         """

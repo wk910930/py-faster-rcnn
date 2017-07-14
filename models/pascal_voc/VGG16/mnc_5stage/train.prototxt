@@ -1030,13 +1030,6 @@ layer {
   bottom: 'gt_masks'
   bottom: 'im_info'
   bottom: 'mask_info'
-  propagate_down: 1
-  propagate_down: 1
-  propagate_down: 0
-  propagate_down: 0
-  propagate_down: 0
-  propagate_down: 0
-  propagate_down: 0
   top: 'rois_ext'
   top: 'labels_ext'
   top: 'mask_targets_ext'
@@ -1048,7 +1041,7 @@ layer {
   python_param {
     module: 'pylayer.stage_bridge_layer'
     layer: 'StageBridgeLayer'
-    param_str: "{ 'feat_stride': 16,  'use_clip': 1,  'clip_base': 512, 'num_classes': 21}"
+    param_str: "{ 'feat_stride': 16, 'num_classes': 21}"
   }
 }
 
