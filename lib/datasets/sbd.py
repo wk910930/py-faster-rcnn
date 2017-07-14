@@ -5,40 +5,68 @@
 # Licensed under The MIT License [see LICENSE for details]
 # --------------------------------------------------------
 
-import cPickle
 import os
-import scipy.io as sio
+import scipy
 import numpy as np
-from datasets.pascal_voc import pascal_voc
+import cPickle
+
+from datasets.imdb import imdb
 from fast_rcnn.config import cfg
 from utils.vis_seg import vis_seg
 from voc_seg_eval import voc_eval_sds
-import scipy
 
-
-class pascal_voc_seg(pascal_voc):
+class sbd(imdb):
     """
+    Semantic Boundaries Dataset
+
     A subclass for datasets.imdb.imdb
     This class contains information of ROIDB and MaskDB
     This class implements roidb and maskdb related functions
     """
     def __init__(self, image_set, year, devkit_path=None):
-        pascal_voc.__init__(self, image_set, year, devkit_path)
-        self._ori_image_num = len(self._image_index)
-        self._comp_id = 'comp6'
-        # PASCAL specific config options
-        self.config = {'cleanup': True,
-                       'use_salt': True,
-                       'top_k': 2000,
-                       'use_diff': False,
-                       'matlab_eval': False,
-                       'rpn_file': None}
-        self._data_path = os.path.join(self._devkit_path, 'VOC' + self._year, 'SBD')
+        imdb.__init__(self, 'sbd_' + year + '_' + image_set)
+        self._year = year
+        self._image_set = image_set
+        self._devkit_path = self._get_default_path() if devkit_path is None \
+                            else devkit_path
+        self._data_path = os.path.join(self._devkit_path, 'dataset')
+        self._classes = ('__background__', # always index 0
+                         'aeroplane', 'bicycle', 'bird', 'boat',
+                         'bottle', 'bus', 'car', 'cat', 'chair',
+                         'cow', 'diningtable', 'dog', 'horse',
+                         'motorbike', 'person', 'pottedplant',
+                         'sheep', 'sofa', 'train', 'tvmonitor')
+        self._image_ext = '.jpg'
+        self._image_index = self._load_image_set_index()
+
+        assert os.path.exists(self._devkit_path), \
+                'SBDdevkit path does not exist: {}'.format(self._devkit_path)
+        assert os.path.exists(self._data_path), \
+                'Path does not exist: {}'.format(self._data_path)
 
     def image_path_at(self, i):
         image_path = os.path.join(self._data_path, 'img', self._image_index[i] + self._image_ext)
         assert os.path.exists(image_path), 'Path does not exist: {}'.format(image_path)
         return image_path
+
+    def _load_image_set_index(self):
+        """
+        Load the indexes listed in this dataset's image set file.
+        """
+        # Example path to image set file:
+        # self._devkit_path + /SBDdevkit/dataset/val.txt
+        image_set_file = os.path.join(self._data_path, self._image_set + '.txt')
+        assert os.path.exists(image_set_file), \
+                'Path does not exist: {}'.format(image_set_file)
+        with open(image_set_file) as f:
+            image_index = [x.strip() for x in f.readlines()]
+        return image_index
+
+    def _get_default_path(self):
+        """
+        Return the default path where SBD is expected to be installed.
+        """
+        return os.path.join(cfg.DATA_DIR, 'SBDdevkit')
 
     def gt_roidb(self):
         """
@@ -52,8 +80,9 @@ class pascal_voc_seg(pascal_voc):
                 roidb = cPickle.load(fid)
             print '{} gt roidb loaded from {}'.format(self.name, cache_file)
             return roidb
-        num_image = len(self.image_index)
-        gt_roidb = [self._load_sbd_annotations(index) for index in xrange(num_image)]
+
+        gt_roidb = [self._load_sbd_annotations(index)
+                    for index in self._image_index]
         with open(cache_file, 'wb') as fid:
             cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
         print 'wrote gt roidb to {}'.format(cache_file)
@@ -76,38 +105,26 @@ class pascal_voc_seg(pascal_voc):
             print 'wrote gt roidb to {}'.format(cache_file)
         return gt_maskdb
 
-    def _load_image_set_index(self):
-        """
-        Load the indexes listed in this dataset's image set file.
-        """
-        # Example path to image set file:
-        # self._devkit_path + /VOCdevkit2007/VOC2007/SBD/val.txt
-        self._data_path = os.path.join(self._devkit_path, 'VOC' + self._year, 'SBD')
-        image_set_file = os.path.join(self._data_path, self._image_set + '.txt')
-        assert os.path.exists(image_set_file), \
-                'Path does not exist: {}'.format(image_set_file)
-        with open(image_set_file) as f:
-            image_index = [x.strip() for x in f.readlines()]
-        return image_index
-
     def _load_sbd_annotations(self, index):
-        if index % 1000 == 0:
-            print '%d / %d' % (index, len(self._image_index))
-        image_name = self._image_index[index]
-        inst_file_name = os.path.join(self._data_path, 'inst', image_name + '.mat')
+        """
+        Load image and bounding boxes info from XML file in the PASCAL VOC
+        format.
+        """
+        inst_file_name = os.path.join(self._data_path, 'inst', index + '.mat')
         gt_inst_mat = scipy.io.loadmat(inst_file_name)
         gt_inst_data = gt_inst_mat['GTinst']['Segmentation'][0][0]
         unique_inst = np.unique(gt_inst_data)
         background_ind = np.where(unique_inst == 0)[0]
         unique_inst = np.delete(unique_inst, background_ind)
 
-        cls_file_name = os.path.join(self._data_path, 'cls', image_name + '.mat')
+        cls_file_name = os.path.join(self._data_path, 'cls', index + '.mat')
         gt_cls_mat = scipy.io.loadmat(cls_file_name)
         gt_cls_data = gt_cls_mat['GTcls']['Segmentation'][0][0]
 
         boxes = np.zeros((len(unique_inst), 4), dtype=np.uint16)
         gt_classes = np.zeros(len(unique_inst), dtype=np.int32)
         overlaps = np.zeros((len(unique_inst), self.num_classes), dtype=np.float32)
+
         for ind, inst_mask in enumerate(unique_inst):
             im_mask = (gt_inst_data == inst_mask)
             im_cls_mask = np.multiply(gt_cls_data, im_mask)
@@ -124,17 +141,16 @@ class pascal_voc_seg(pascal_voc):
             overlaps[ind, unique_cls_inst[0]] = 1.0
 
         overlaps = scipy.sparse.csr_matrix(overlaps)
+
         return {'boxes': boxes,
-              'gt_classes': gt_classes,
-              'gt_overlaps': overlaps,
-              'flipped': False}
+                'gt_classes': gt_classes,
+                'gt_overlaps': overlaps,
+                'flipped': False}
 
     def _load_sbd_mask_annotations(self, index, gt_roidbs):
         """
         Load gt_masks information from SBD's additional data
         """
-        if index % 1000 == 0:
-            print '%d / %d' % (index, len(self._image_index))
         image_name = self._image_index[index]
         inst_file_name = os.path.join(self._data_path, 'inst', image_name + '.mat')
         gt_inst_mat = scipy.io.loadmat(inst_file_name)
@@ -169,7 +185,7 @@ class pascal_voc_seg(pascal_voc):
         }
 
     def append_flipped_masks(self):
-        num_images = self._ori_image_num
+        num_images = self.num_images
         flip_maskdb = []
         for i in xrange(num_images):
             masks = self.maskdb[i]['gt_masks']
@@ -182,17 +198,30 @@ class pascal_voc_seg(pascal_voc):
                      'flipped': True}
             flip_maskdb.append(entry)
         self.maskdb.extend(flip_maskdb)
-        # Need to check this condition since otherwise we may occasionally *4
-        if self._image_index == self.num_images:
-            self._image_index *= 2
+        # Need to check this condition since
+        # otherwise we may occasionally *4
+        if self._image_index == num_images:
+            self._image_index = self._image_index * 2
 
     def visualization_segmentation(self, output_dir):
         vis_seg(self.image_index, self.classes, output_dir, self._data_path)
 
-    # --------------------------- Evaluation ---------------------------
-    def evaluate_segmentation(self, all_boxes, all_masks, output_dir):
-        self._write_voc_seg_results_file(all_boxes, all_masks, output_dir)
-        self._py_evaluate_segmentation(output_dir)
+    def _reformat_result(self, boxes, masks):
+        num_images = len(self.image_index)
+        num_class = len(self.classes)
+        reformat_masks = [[[] for _ in xrange(num_images)]
+                          for _ in xrange(num_class)]
+        for cls_inds in xrange(1, num_class):
+            for img_inds in xrange(num_images):
+                if len(masks[cls_inds][img_inds]) == 0:
+                    continue
+                num_inst = masks[cls_inds][img_inds].shape[0]
+                reformat_masks[cls_inds][img_inds] = masks[cls_inds][img_inds]\
+                    .reshape(num_inst, cfg.MASK_SIZE, cfg.MASK_SIZE)
+                reformat_masks[cls_inds][img_inds] = \
+                      reformat_masks[cls_inds][img_inds] >= cfg.BINARIZE_THRESH
+        all_masks = reformat_masks
+        return boxes, all_masks
 
     def _write_voc_seg_results_file(self, all_boxes, all_masks, output_dir):
         """
@@ -212,22 +241,6 @@ class pascal_voc_seg(pascal_voc):
             filename = os.path.join(output_dir, cls + '_seg.pkl')
             with open(filename, 'wr') as f:
                 cPickle.dump(all_masks[cls_inds], f, cPickle.HIGHEST_PROTOCOL)
-
-    def _reformat_result(self, boxes, masks):
-        num_images = len(self.image_index)
-        num_class = len(self.classes)
-        reformat_masks = [[[] for _ in xrange(num_images)]
-                          for _ in xrange(num_class)]
-        for cls_inds in xrange(1, num_class):
-            for img_inds in xrange(num_images):
-                if len(masks[cls_inds][img_inds]) == 0:
-                    continue
-                num_inst = masks[cls_inds][img_inds].shape[0]
-                reformat_masks[cls_inds][img_inds] = masks[cls_inds][img_inds]\
-                    .reshape(num_inst, cfg.MASK_SIZE, cfg.MASK_SIZE)
-                reformat_masks[cls_inds][img_inds] = reformat_masks[cls_inds][img_inds] >= cfg.BINARIZE_THRESH
-        all_masks = reformat_masks
-        return boxes, all_masks
 
     def _py_evaluate_segmentation(self, output_dir):
         imageset_file = os.path.join(self._data_path ,self._image_set + '.txt')
@@ -262,3 +275,6 @@ class pascal_voc_seg(pascal_voc):
             print('AP for {} = {:.2f}'.format(cls, ap*100))
         print('Mean AP@0.7 = {:.2f}'.format(np.mean(aps)*100))
 
+    def evaluate_segmentation(self, all_boxes, all_masks, output_dir):
+        self._write_voc_seg_results_file(all_boxes, all_masks, output_dir)
+        self._py_evaluate_segmentation(output_dir)

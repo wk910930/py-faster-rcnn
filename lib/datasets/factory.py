@@ -9,11 +9,12 @@
 
 __sets = {}
 
+import numpy as np
+
 from datasets.pascal_voc import pascal_voc
-from datasets.pascal_voc_seg import pascal_voc_seg
 from datasets.coco import coco
 from datasets.ilsvrc import ilsvrc
-import numpy as np
+from datasets.sbd import sbd
 
 # Set up voc_<year>_<split> using selective search "fast" mode
 for year in ['2007', '2012', '0712']:
@@ -24,9 +25,8 @@ for year in ['2007', '2012', '0712']:
 # Set up voc_<year>_<split>
 for year in ['2012']:
     for split in ['train', 'val']:
-        name = 'voc_{}_{}'.format(year, split)
-        __sets[name] = (lambda split=split, year=year: pascal_voc_seg(split, year))
-
+        name = 'sbd_{}_{}'.format(year, split)
+        __sets[name] = (lambda split=split, year=year: sbd(split, year))
 
 # Set up coco_2014_<split>
 for year in ['2014']:

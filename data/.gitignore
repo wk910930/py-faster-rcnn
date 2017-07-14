@@ -13,5 +13,6 @@ coco
 coco_proposals
 ILSVRCdevkit*
 ilsvrc_proposals
+SBDdevkit
 
 cache
