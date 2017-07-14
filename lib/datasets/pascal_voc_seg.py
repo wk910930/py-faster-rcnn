@@ -34,7 +34,6 @@ class pascal_voc_seg(pascal_voc):
                        'matlab_eval': False,
                        'rpn_file': None}
         self._data_path = os.path.join(self._devkit_path, 'VOC' + self._year, 'SBD')
-        self._roidb_path = os.path.join(self.cache_path, 'voc_2012_' + image_set + '_mcg_maskdb')
 
     def image_path_at(self, i):
         image_path = os.path.join(self._data_path, 'img', self._image_index[i] + self._image_ext)
