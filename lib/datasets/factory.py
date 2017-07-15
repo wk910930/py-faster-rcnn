@@ -22,7 +22,7 @@ for year in ['2007', '2012', '0712']:
         name = 'voc_{}_{}'.format(year, split)
         __sets[name] = (lambda split=split, year=year: pascal_voc(split, year))
 
-# Set up voc_<year>_<split>
+# Set up sbd_<year>_<split>
 for year in ['2012']:
     for split in ['train', 'val']:
         name = 'sbd_{}_{}'.format(year, split)
