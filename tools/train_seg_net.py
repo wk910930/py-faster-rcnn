@@ -122,7 +122,7 @@ if __name__ == '__main__':
     print '{:d} roidb entries'.format(len(roidb))
     print '{:d} maskdb entries'.format(len(maskdb))
 
-    output_dir = get_output_dir(imdb, None)
+    output_dir = get_output_dir(imdb)
     print 'Output will be saved to `{:s}`'.format(output_dir)
 
     train_net(args.solver, roidb, maskdb, output_dir,
