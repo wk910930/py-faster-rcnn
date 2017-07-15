@@ -51,11 +51,11 @@ class SolverWrapper(object):
             self.solver.net.layers[0].set_maskdb(maskdb)
 
     def snapshot(self):
-        """ Take a snapshot of the network after unnormalizing the learned
-            bounding-box regression weights. This enables easy use at test-time.
+        """Take a snapshot of the network after unnormalizing the learned
+        bounding-box regression weights. This enables easy use at test-time.
         """
         net = self.solver.net
-        # I'm wondering whether I still need to keep it if only faster-RCNN is needed
+
         scale_bbox_params = (cfg.TRAIN.BBOX_REG and
                              cfg.TRAIN.BBOX_NORMALIZE_TARGETS and
                              net.params.has_key('bbox_pred'))
@@ -65,16 +65,13 @@ class SolverWrapper(object):
             orig_0 = net.params['bbox_pred'][0].data.copy()
             orig_1 = net.params['bbox_pred'][1].data.copy()
 
-            # scale and shift with transform reg unnormalization; then save snapshot
+            # scale and shift with bbox reg unnormalization; then save snapshot
             net.params['bbox_pred'][0].data[...] = \
-                (net.params['bbox_pred'][0].data *
-                 self.bbox_stds[:, np.newaxis])
+                    (net.params['bbox_pred'][0].data *
+                     self.bbox_stds[:, np.newaxis])
             net.params['bbox_pred'][1].data[...] = \
-                (net.params['bbox_pred'][1].data *
-                 self.bbox_stds + self.bbox_means)
-
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
+                    (net.params['bbox_pred'][1].data *
+                     self.bbox_stds + self.bbox_means)
 
         # If we specify an infix in the configuration
         infix = ('_' + cfg.TRAIN.SNAPSHOT_INFIX
@@ -87,6 +84,7 @@ class SolverWrapper(object):
         # parameter names, its size will exceed 2GB, which make program crash
         # Luckily, we may save it to HDF5 to avoid this issues
         filename = os.path.join(self.output_dir, filename + '.h5')
+
         net.save_to_hdf5(str(filename), False)
         print 'Wrote snapshot to: {:s}'.format(filename)
 
