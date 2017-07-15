@@ -22,7 +22,8 @@ import caffe
 
 
 def parse_args():
-    """ Parse input arguments
+    """
+    Parse input arguments
     """
     parser = argparse.ArgumentParser(description='Train a Fast R-CNN network')
     parser.add_argument('--gpu', dest='gpu_id',
@@ -119,6 +120,7 @@ if __name__ == '__main__':
     imdb, roidb = attach_roidb(args.imdb_name)
     imdb, maskdb = attach_maskdb(args.imdb_name)
     print '{:d} roidb entries'.format(len(roidb))
+    print '{:d} maskdb entries'.format(len(maskdb))
 
     output_dir = get_output_dir(imdb, None)
     print 'Output will be saved to `{:s}`'.format(output_dir)
