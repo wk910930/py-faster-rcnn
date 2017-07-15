@@ -93,6 +93,7 @@ class SolverWrapper(object):
             # restore net to original state
             net.params['bbox_pred'][0].data[...] = orig_0
             net.params['bbox_pred'][1].data[...] = orig_1
+        return filename
 
     def train_model(self, max_iters):
         """Network training loop."""
