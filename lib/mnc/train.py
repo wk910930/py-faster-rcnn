@@ -58,7 +58,8 @@ class SolverWrapper(object):
         # I'm wondering whether I still need to keep it if only faster-RCNN is needed
         scale_bbox_params = (cfg.TRAIN.BBOX_REG and
                              cfg.TRAIN.BBOX_NORMALIZE_TARGETS and
-                             'bbox_pred' in net.params)
+                             net.params.has_key('bbox_pred'))
+
         if scale_bbox_params:
             # save original values
             orig_0 = net.params['bbox_pred'][0].data.copy()
