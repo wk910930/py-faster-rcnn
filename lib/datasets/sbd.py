@@ -186,7 +186,6 @@ class sbd(imdb):
 
     def append_flipped_masks(self):
         num_images = self.num_images
-        flip_maskdb = []
         for i in xrange(num_images):
             masks = self.maskdb[i]['gt_masks']
             masks_flip = []
@@ -196,12 +195,8 @@ class sbd(imdb):
             entry = {'gt_masks': masks_flip,
                      'mask_max': self.maskdb[i]['mask_max'],
                      'flipped': True}
-            flip_maskdb.append(entry)
-        self.maskdb.extend(flip_maskdb)
-        # Need to check this condition since
-        # otherwise we may occasionally *4
-        if self._image_index == num_images:
-            self._image_index = self._image_index * 2
+            self.maskdb.append(entry)
+        self._image_index = self._image_index * 2
 
     def visualization_segmentation(self, output_dir):
         vis_seg(self.image_index, self.classes, output_dir, self._data_path)
