@@ -1,21 +1,22 @@
 name: "VGG16"
-
-input: "data"
-input_shape {
-  dim: 1
-  dim: 3
-  dim: 224
-  dim: 224
+layer {
+  name: "input"
+  type: "Input"
+  top: "data"
+  top: "im_info"
+  input_param {
+    shape {
+      dim: 1
+      dim: 3
+      dim: 224
+      dim: 224
+    }
+    shape {
+      dim: 1
+      dim: 3
+    }
+  }
 }
-
-input: "im_info"
-input_shape {
-  dim: 1
-  dim: 3
-}
-
-# ------------ Convolution -----------
-
 layer {
   name: "conv1_1"
   type: "Convolution"
@@ -385,21 +386,32 @@ layer {
   bottom: "conv5_3"
   top: "conv5_3"
 }
-
-#------------ RPN ------------
-
 layer {
   name: "rpn_conv_3x3"
   type: "Convolution"
   bottom: "conv5_3"
   top: "rpn_output"
-  param { lr_mult: 1.0 decay_mult: 1.0 }
-  param { lr_mult: 2.0 decay_mult: 0 }
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 512
-    kernel_size: 3 pad: 1 stride: 1
-    weight_filler { type: "gaussian" std: 0.01 }
-    bias_filler { type: "constant" value: 0 }
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
   }
 }
 layer {
@@ -408,19 +420,32 @@ layer {
   bottom: "rpn_output"
   top: "rpn_output"
 }
-
 layer {
   name: "rpn_cls_score"
   type: "Convolution"
   bottom: "rpn_output"
   top: "rpn_cls_score"
-  param { lr_mult: 1.0 decay_mult: 1.0 }
-  param { lr_mult: 2.0 decay_mult: 0 }
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
-    num_output: 18   # 2(bg/fg) * 9(anchors)
-    kernel_size: 1 pad: 0 stride: 1
-    weight_filler { type: "gaussian" std: 0.01 }
-    bias_filler { type: "constant" value: 0 }
+    num_output: 18
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
   }
 }
 layer {
@@ -428,25 +453,43 @@ layer {
   type: "Convolution"
   bottom: "rpn_output"
   top: "rpn_bbox_pred"
-  param { lr_mult: 1.0 decay_mult: 1.0 }
-  param { lr_mult: 2.0 decay_mult: 0 }
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
-    num_output: 36   # 4 * 9(anchors)
-    kernel_size: 1 pad: 0 stride: 1
-    weight_filler { type: "gaussian" std: 0.01 }
-    bias_filler { type: "constant" value: 0 }
+    num_output: 36
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
   }
 }
 layer {
-   bottom: "rpn_cls_score"
-   top: "rpn_cls_score_reshape"
-   name: "rpn_cls_score_reshape"
-   type: "Reshape"
-   reshape_param { shape { dim: 0 dim: 2 dim: -1 dim: 0 } }
+  name: "rpn_cls_score_reshape"
+  type: "Reshape"
+  bottom: "rpn_cls_score"
+  top: "rpn_cls_score_reshape"
+  reshape_param {
+    shape {
+      dim: 0
+      dim: 2
+      dim: -1
+      dim: 0
+    }
+  }
 }
-
-#------------ Anchor to Proposal ------------
-
 layer {
   name: "rpn_cls_prob"
   type: "Softmax"
@@ -454,107 +497,110 @@ layer {
   top: "rpn_cls_prob"
 }
 layer {
-  name: 'rpn_cls_prob_reshape'
-  type: 'Reshape'
-  bottom: 'rpn_cls_prob'
-  top: 'rpn_cls_prob_reshape'
-  reshape_param { shape { dim: 0 dim: 18 dim: -1 dim: 0 } }
-}
-layer {
-  name: 'proposal'
-  type: 'Python'
-  bottom: 'rpn_cls_prob_reshape'
-  bottom: 'rpn_bbox_pred'
-  bottom: 'im_info'
-  top: 'rois'
-  python_param {
-    module: 'rpn.proposal_layer'
-    layer: 'ProposalLayer'
-    param_str: "'feat_stride': 16"
+  name: "rpn_cls_prob_reshape"
+  type: "Reshape"
+  bottom: "rpn_cls_prob"
+  top: "rpn_cls_prob_reshape"
+  reshape_param {
+    shape {
+      dim: 0
+      dim: 18
+      dim: -1
+      dim: 0
+    }
   }
 }
-
-#------------ Roi Warping ------------
-
+layer {
+  name: "proposal"
+  type: "Python"
+  bottom: "rpn_cls_prob_reshape"
+  bottom: "rpn_bbox_pred"
+  bottom: "im_info"
+  top: "rois"
+  python_param {
+    module: "rpn.proposal_layer"
+    layer: "ProposalLayer"
+    param_str: "\'feat_stride\': 16"
+  }
+}
 layer {
   name: "roi_interpolate_conv5_premax"
   type: "ROIWarping"
   bottom: "conv5_3"
   bottom: "rois"
-  propagate_down: 1
-  propagate_down: 1
   top: "roi_interpolate_conv5_premax"
+  propagate_down: true
+  propagate_down: true
   roi_warping_param {
-    pooled_w: 28
     pooled_h: 28
-    spatial_scale: 0.0625 # 1/16
+    pooled_w: 28
+    spatial_scale: 0.0625
   }
 }
-
 layer {
   name: "roi_interpolate_conv5"
   type: "Pooling"
   bottom: "roi_interpolate_conv5_premax"
   top: "roi_interpolate_conv5"
   pooling_param {
+    pool: MAX
     kernel_size: 2
     stride: 2
     pad: 0
-    pool: MAX
   }
 }
-
-#------------ Mask Estimation ------------
-
 layer {
   name: "fc6_maskest"
   type: "InnerProduct"
   bottom: "roi_interpolate_conv5"
   top: "fc6_maskest"
-  param { name: "fc6_maskest_w"}
-  param { name: "fc6_maskest_b"}
+  param {
+    name: "fc6_maskest_w"
+  }
+  param {
+    name: "fc6_maskest_b"
+  }
   inner_product_param {
     num_output: 256
   }
 }
-
 layer {
   name: "relu6_maskest"
   type: "ReLU"
   bottom: "fc6_maskest"
   top: "fc6_maskest"
 }
-
 layer {
   name: "mask_pred"
   type: "InnerProduct"
   bottom: "fc6_maskest"
   top: "mask_pred"
-  param { name: "mask_pred_w" }
-  param { name: "mask_pred_b" }
+  param {
+    name: "mask_pred_w"
+  }
+  param {
+    name: "mask_pred_b"
+  }
   inner_product_param {
-    num_output: 441 # 21*21
+    num_output: 441
   }
 }
-
 layer {
   name: "mask_output"
   type: "Sigmoid"
   bottom: "mask_pred"
   top: "mask_output"
 }
-
 layer {
   name: "mask_proposal"
-  type: 'Python'
-  bottom: 'mask_output'
-  top: 'mask_proposal'
+  type: "Python"
+  bottom: "mask_output"
+  top: "mask_proposal"
   python_param {
-    module: 'pylayer.mask_layer'
-    layer: 'MaskLayer'
+    module: "pylayer.mask_layer"
+    layer: "MaskLayer"
   }
 }
-
 layer {
   name: "mask_resize"
   type: "MaskResize"
@@ -565,52 +611,46 @@ layer {
     output_width: 14
   }
 }
-
-#------------ Box Features ------------
-
 layer {
   name: "roi_interpolate_conv5_box"
   type: "Pooling"
   bottom: "roi_interpolate_conv5"
   top: "roi_interpolate_conv5_box"
   pooling_param {
+    pool: MAX
     kernel_size: 2
     stride: 2
     pad: 0
-    pool: MAX
   }
 }
-
 layer {
   name: "fc6"
   type: "InnerProduct"
   bottom: "roi_interpolate_conv5_box"
   top: "fc6"
   param {
-    name: "fc6_w" 
+    name: "fc6_w"
   }
   param {
-    name: "fc6_b" 
+    name: "fc6_b"
   }
   inner_product_param {
     num_output: 4096
   }
 }
-
 layer {
   name: "relu6"
   type: "ReLU"
   bottom: "fc6"
   top: "fc6"
 }
-
 layer {
   name: "fc7"
   type: "InnerProduct"
   bottom: "fc6"
   top: "fc7"
   param {
-    name: "fc7_w" 
+    name: "fc7_w"
   }
   param {
     name: "fc7_b"
@@ -625,9 +665,6 @@ layer {
   bottom: "fc7"
   top: "fc7"
 }
-
-#------------ Mask Features ------------
-
 layer {
   name: "mask_pooling"
   type: "MaskPooling"
@@ -635,68 +672,60 @@ layer {
   bottom: "mask_proposal_resize"
   top: "roi_mask_conv5"
 }
-
 layer {
   name: "roi_interpolate_conv5_mask"
   type: "Pooling"
   bottom: "roi_mask_conv5"
   top: "roi_interpolate_conv5_mask"
   pooling_param {
+    pool: MAX
     kernel_size: 2
     stride: 2
     pad: 0
-    pool: MAX
   }
 }
-
 layer {
   name: "fc6_mask"
   type: "InnerProduct"
   bottom: "roi_interpolate_conv5_mask"
   top: "fc6_mask"
   param {
-    name: "fc6_mask_w" 
+    name: "fc6_mask_w"
   }
   param {
-    name: "fc6_mask_b" 
+    name: "fc6_mask_b"
   }
   inner_product_param {
     num_output: 4096
   }
 }
-
 layer {
   name: "relu6_mask"
   type: "ReLU"
   bottom: "fc6_mask"
   top: "fc6_mask"
 }
-
 layer {
   name: "fc7_mask"
   type: "InnerProduct"
   bottom: "fc6_mask"
   top: "fc7_mask"
   param {
-    name: "fc7_mask_w" 
+    name: "fc7_mask_w"
   }
   param {
-    name: "fc7_mask_b" 
+    name: "fc7_mask_b"
   }
   inner_product_param {
     num_output: 4096
   }
 }
-
 layer {
   name: "relu7_mask"
   type: "ReLU"
   bottom: "fc7_mask"
   top: "fc7_mask"
 }
-
-#----- Concat Box-Mask Feature -----
-
 layer {
   name: "join_box_mask"
   type: "Concat"
@@ -707,25 +736,21 @@ layer {
     axis: 1
   }
 }
-
-#----- Box-level Classification -----
-
 layer {
   name: "cls_score"
   type: "InnerProduct"
   bottom: "join_box_mask"
   top: "cls_score"
   param {
-    name: "cls_score_w" 
+    name: "cls_score_w"
   }
   param {
-    name: "cls_score_b" 
+    name: "cls_score_b"
   }
   inner_product_param {
     num_output: 21
   }
 }
-
 layer {
   name: "cls_prob"
   type: "Softmax"
@@ -736,25 +761,21 @@ layer {
     normalize: true
   }
 }
-
-#----- Mask-level Classification -----
-
 layer {
   name: "seg_cls_score"
   type: "InnerProduct"
   bottom: "join_box_mask"
   top: "seg_cls_score"
   param {
-    name: "seg_cls_score_w" 
+    name: "seg_cls_score_w"
   }
   param {
-    name: "seg_cls_score_b" 
+    name: "seg_cls_score_b"
   }
   inner_product_param {
     num_output: 21
   }
 }
-
 layer {
   name: "seg_cls_prob"
   type: "Softmax"
@@ -765,47 +786,34 @@ layer {
     normalize: true
   }
 }
-
-#----- Bounding-box Regression -----
-
 layer {
   name: "bbox_pred"
   type: "InnerProduct"
   bottom: "join_box_mask"
   top: "bbox_pred"
   param {
-    name: "bbox_pred_w" 
+    name: "bbox_pred_w"
   }
   param {
-    name: "bbox_pred_b" 
+    name: "bbox_pred_b"
   }
   inner_product_param {
     num_output: 84
   }
 }
-
-
-# --------- Next Stage ----------
-# We extend 3 stage mnc to 5 stage
-# layer structure are mostly similar
-# name are suffixed by _ext (extend)
-
 layer {
   name: "stage_bridge"
-  type: 'Python'
-  bottom: 'rois'
-  bottom: 'bbox_pred'
-  bottom: 'seg_cls_prob'
-  bottom: 'im_info'
-  top: 'rois_ext'
+  type: "Python"
+  bottom: "rois"
+  bottom: "bbox_pred"
+  bottom: "seg_cls_prob"
+  bottom: "im_info"
+  top: "rois_ext"
   python_param {
-    module: 'pylayer.stage_bridge_layer'
-    layer: 'StageBridgeLayer'
+    module: "pylayer.stage_bridge_layer"
+    layer: "StageBridgeLayer"
   }
 }
-
-#------------ Roi Warping Ext ------------
-
 layer {
   name: "roi_interpolate_conv5_ext"
   type: "ROIWarping"
@@ -813,75 +821,63 @@ layer {
   bottom: "rois_ext"
   top: "roi_interpolate_conv5_ext"
   roi_warping_param {
-    pooled_w: 14
     pooled_h: 14
-    spatial_scale: 0.0625 # 1/16
+    pooled_w: 14
+    spatial_scale: 0.0625
   }
 }
-
-#------------ Mask Estimation Ext ------------
-
 layer {
   name: "fc6_maskest_ext"
   type: "InnerProduct"
   bottom: "roi_interpolate_conv5_ext"
   top: "fc6_maskest_ext"
   param {
-    name: "fc6_maskest_w" 
+    name: "fc6_maskest_w"
   }
   param {
-    name: "fc6_maskest_b" 
+    name: "fc6_maskest_b"
   }
   inner_product_param {
     num_output: 256
   }
 }
-
 layer {
   name: "relu6_maskest_ext"
   type: "ReLU"
   bottom: "fc6_maskest_ext"
   top: "fc6_maskest_ext"
 }
-
 layer {
   name: "mask_pred_ext"
   type: "InnerProduct"
   bottom: "fc6_maskest_ext"
   top: "mask_pred_ext"
   param {
-    name: "mask_pred_w" 
+    name: "mask_pred_w"
   }
   param {
-    name: "mask_pred_b" 
+    name: "mask_pred_b"
   }
   inner_product_param {
-    num_output: 441 # 21*21
+    num_output: 441
   }
 }
-
-#------------ Mask Resize ------------
-# get masks from sigmoid prediction 
-# and use it for mask pooling
-
 layer {
   name: "mask_output_ext"
   type: "Sigmoid"
   bottom: "mask_pred_ext"
   top: "mask_output_ext"
 }
-
 layer {
   name: "mask_proposal_ext"
-  type: 'Python'
-  bottom: 'mask_output_ext'
-  top: 'mask_proposal_ext'
+  type: "Python"
+  bottom: "mask_output_ext"
+  top: "mask_proposal_ext"
   python_param {
-    module: 'pylayer.mask_layer'
-    layer: 'MaskLayer'
+    module: "pylayer.mask_layer"
+    layer: "MaskLayer"
   }
 }
-
 layer {
   name: "mask_resize_ext"
   type: "MaskResize"
@@ -892,55 +888,49 @@ layer {
     output_width: 14
   }
 }
-
-#------------ Box Features Ext ------------
-
 layer {
   name: "roi_interpolate_conv5_box_ext"
   type: "Pooling"
   bottom: "roi_interpolate_conv5_ext"
   top: "roi_interpolate_conv5_box_ext"
   pooling_param {
+    pool: MAX
     kernel_size: 2
     stride: 2
     pad: 0
-    pool: MAX
   }
 }
-
 layer {
   name: "fc6_ext"
   type: "InnerProduct"
   bottom: "roi_interpolate_conv5_box_ext"
   top: "fc6_ext"
   param {
-    name: "fc6_w" 
+    name: "fc6_w"
   }
   param {
-    name: "fc6_b" 
+    name: "fc6_b"
   }
   inner_product_param {
     num_output: 4096
   }
 }
-
 layer {
   name: "relu6_ext"
   type: "ReLU"
   bottom: "fc6_ext"
   top: "fc6_ext"
 }
-
 layer {
   name: "fc7_ext"
   type: "InnerProduct"
   bottom: "fc6_ext"
   top: "fc7_ext"
   param {
-    name: "fc7_w" 
+    name: "fc7_w"
   }
   param {
-    name: "fc7_b" 
+    name: "fc7_b"
   }
   inner_product_param {
     num_output: 4096
@@ -952,9 +942,6 @@ layer {
   bottom: "fc7_ext"
   top: "fc7_ext"
 }
-
-# ------ Mask Feature Ext ---------
-
 layer {
   name: "mask_pooling_ext"
   type: "MaskPooling"
@@ -962,68 +949,60 @@ layer {
   bottom: "mask_proposal_resize_ext"
   top: "roi_mask_conv5_ext"
 }
-
 layer {
   name: "roi_interpolate_conv5_mask_ext"
   type: "Pooling"
   bottom: "roi_mask_conv5_ext"
   top: "roi_interpolate_conv5_mask_ext"
   pooling_param {
+    pool: MAX
     kernel_size: 2
     stride: 2
     pad: 0
-    pool: MAX
   }
 }
-
 layer {
   name: "fc6_mask_ext"
   type: "InnerProduct"
   bottom: "roi_interpolate_conv5_mask_ext"
   top: "fc6_mask_ext"
   param {
-    name: "fc6_mask_w" 
+    name: "fc6_mask_w"
   }
   param {
-    name: "fc6_mask_b" 
+    name: "fc6_mask_b"
   }
   inner_product_param {
     num_output: 4096
   }
 }
-
 layer {
   name: "relu6_mask_ext"
   type: "ReLU"
   bottom: "fc6_mask_ext"
   top: "fc6_mask_ext"
 }
-
 layer {
   name: "fc7_mask_ext"
   type: "InnerProduct"
   bottom: "fc6_mask_ext"
   top: "fc7_mask_ext"
   param {
-    name: "fc7_mask_w" 
+    name: "fc7_mask_w"
   }
   param {
-    name: "fc7_mask_b" 
+    name: "fc7_mask_b"
   }
   inner_product_param {
     num_output: 4096
   }
 }
-
 layer {
   name: "relu7_mask_ext"
   type: "ReLU"
   bottom: "fc7_mask_ext"
   top: "fc7_mask_ext"
 }
-
-#----- Concat Box-Mask Feature -----
-
 layer {
   name: "join_box_mask_ext"
   type: "Concat"
@@ -1034,25 +1013,21 @@ layer {
     axis: 1
   }
 }
-
-#----- Box-level Classification -----
-
 layer {
   name: "cls_score_ext"
   type: "InnerProduct"
   bottom: "join_box_mask_ext"
   top: "cls_score_ext"
   param {
-    name: "cls_score_w" 
+    name: "cls_score_w"
   }
   param {
-    name: "cls_score_b" 
+    name: "cls_score_b"
   }
   inner_product_param {
     num_output: 21
   }
 }
-
 layer {
   name: "cls_prob_ext"
   type: "Softmax"
@@ -1063,21 +1038,21 @@ layer {
     normalize: true
   }
 }
-
-#----- Mask-level Classification -----
-
 layer {
   name: "seg_cls_score_ext"
   type: "InnerProduct"
   bottom: "join_box_mask_ext"
   top: "seg_cls_score_ext"
-  param { name: "seg_cls_score_w" }
-  param { name: "seg_cls_score_b" }
+  param {
+    name: "seg_cls_score_w"
+  }
+  param {
+    name: "seg_cls_score_b"
+  }
   inner_product_param {
     num_output: 21
   }
 }
-
 layer {
   name: "seg_cls_prob_ext"
   type: "Softmax"
@@ -1088,17 +1063,16 @@ layer {
     normalize: true
   }
 }
-
 layer {
   name: "bbox_pred_ext"
   type: "InnerProduct"
   bottom: "join_box_mask_ext"
   top: "bbox_pred_ext"
   param {
-    name: "bbox_pred_w" 
+    name: "bbox_pred_w"
   }
   param {
-    name: "bbox_pred_b" 
+    name: "bbox_pred_b"
   }
   inner_product_param {
     num_output: 84
