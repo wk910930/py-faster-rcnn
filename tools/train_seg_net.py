@@ -116,13 +116,16 @@ if __name__ == '__main__':
     caffe.set_mode_gpu()
     caffe.set_device(args.gpu_id)
 
-    # get imdb and roidb from specified imdb_name
-    imdb, roidb = attach_roidb(args.imdb_name)
-    imdb, maskdb = attach_maskdb(args.imdb_name)
+    # get imdb, roidb and maskdb from specified imdb_name
+    # TODO(kun): Currently we get roidb and maskdb separately, which means
+    #   we are creating two imdbs. We can consider to merge them to save time.
+    imdb_roi, roidb = attach_roidb(args.imdb_name)
+    imdb_mask, maskdb = attach_maskdb(args.imdb_name)
     print '{:d} roidb entries'.format(len(roidb))
     print '{:d} maskdb entries'.format(len(maskdb))
+    assert imdb_roi.image_index == imdb_mask.image_index
 
-    output_dir = get_output_dir(imdb)
+    output_dir = get_output_dir(imdb_roi)  # imdb_mask also works
     print 'Output will be saved to `{:s}`'.format(output_dir)
 
     train_net(args.solver, roidb, maskdb, output_dir,
