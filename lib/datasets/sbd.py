@@ -198,9 +198,6 @@ class sbd(imdb):
             self.maskdb.append(entry)
         self._image_index = self._image_index * 2
 
-    def visualization_segmentation(self, output_dir):
-        vis_seg(self.image_index, self.classes, output_dir, self._data_path)
-
     def _reformat_result(self, boxes, masks):
         num_images = len(self.image_index)
         num_class = len(self.classes)
