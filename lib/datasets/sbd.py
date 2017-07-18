@@ -208,38 +208,49 @@ class sbd(imdb):
             self.maskdb.append(entry)
         self._image_index = self._image_index * 2
 
-    def _reformat_result(self, boxes, masks):
+    def _reformat_result(self, masks, thresh):
+        """
+        Reformat masks to be binary (0/1) and in shape of (n, sz, sz)
+        """
+
         num_images = self.num_images
         num_classes = self.num_classes
         reformat_masks = [[[] for _ in xrange(num_images)]
                           for _ in xrange(num_classes)]
+
         for cls_inds in xrange(1, num_classes):
             for img_inds in xrange(num_images):
                 if len(masks[cls_inds][img_inds]) == 0:
                     continue
                 num_inst = masks[cls_inds][img_inds].shape[0]
+                # Reshape
                 reformat_masks[cls_inds][img_inds] = \
                     masks[cls_inds][img_inds].reshape(num_inst, cfg.MASK_SIZE, cfg.MASK_SIZE)
+                # Binarize
                 reformat_masks[cls_inds][img_inds] = \
-                    reformat_masks[cls_inds][img_inds] >= cfg.BINARIZE_THRESH
-        all_masks = reformat_masks
-        return boxes, all_masks
+                    reformat_masks[cls_inds][img_inds] >= thresh
+
+        return reformat_masks
 
     def _write_voc_seg_results_file(self, all_boxes, all_masks, output_dir):
         """
-        Write results as a pkl file, note this is different from
-        detection task since it's difficult to write masks to txt
+        Write results as a pkl file.
+        Notice: This is different from detection task
+        since it is difficult to write masks to txt
         """
-        # Always reformat result in case of sometimes masks are not
-        # binary or is in shape (n, sz*sz) instead of (n, sz, sz)
-        all_boxes, all_masks = self._reformat_result(all_boxes, all_masks)
+
+        # Always reformat result in case that masks are not binary (0/1)
+        # or is in shape (n, sz*sz) instead of (n, sz, sz)
+        all_masks = self._reformat_result(all_masks, cfg.BINARIZE_THRESH)
         for cls_inds, cls in enumerate(self.classes):
             if cls == '__background__':
                 continue
             print 'Writing {} VOC results file'.format(cls)
+            # Detection
             filename = os.path.join(output_dir, cls + '_det.pkl')
             with open(filename, 'wr') as f:
                 cPickle.dump(all_boxes[cls_inds], f, cPickle.HIGHEST_PROTOCOL)
+            # Segmentation
             filename = os.path.join(output_dir, cls + '_seg.pkl')
             with open(filename, 'wr') as f:
                 cPickle.dump(all_masks[cls_inds], f, cPickle.HIGHEST_PROTOCOL)
