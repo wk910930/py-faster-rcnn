@@ -104,8 +104,8 @@ class sbd(imdb):
             return gt_maskdb
 
         gt_roidb = self.gt_roidb()
-        gt_maskdb = [self._load_sbd_mask_annotations(index, gt_roidb)
-                     for index in self.image_index]
+        gt_maskdb = [self._load_sbd_mask_annotations(index, gt_roidb[i])
+                     for i, index in enumerate(self.image_index)]
         with open(cache_file, 'wb') as fid:
             cPickle.dump(gt_maskdb, fid, cPickle.HIGHEST_PROTOCOL)
         print 'wrote gt roidb to {}'.format(cache_file)
