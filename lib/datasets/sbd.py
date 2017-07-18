@@ -12,8 +12,7 @@ import cPickle
 
 from datasets.imdb import imdb
 from fast_rcnn.config import cfg
-from utils.vis_seg import vis_seg
-from voc_seg_eval import voc_eval_sds
+from datasets.voc_seg_eval import voc_eval_sds
 
 class sbd(imdb):
     """
@@ -45,8 +44,10 @@ class sbd(imdb):
                 'Path does not exist: {}'.format(self._data_path)
 
     def image_path_at(self, i):
-        image_path = os.path.join(self._data_path, 'img', self._image_index[i] + self._image_ext)
-        assert os.path.exists(image_path), 'Path does not exist: {}'.format(image_path)
+        image_path = os.path.join(self._data_path, 'img',
+            self._image_index[i] + self._image_ext)
+        assert os.path.exists(image_path), \
+            'Path does not exist: {}'.format(image_path)
         return image_path
 
     def _load_image_set_index(self):
@@ -90,6 +91,11 @@ class sbd(imdb):
         return gt_roidb
 
     def gt_maskdb(self):
+        """
+        Return the database of ground-truth masks.
+
+        This function loads/saves from/to a cache file to speed up future calls.
+        """
         cache_file = os.path.join(self.cache_path, self.name + '_gt_maskdb.pkl')
         if os.path.exists(cache_file):
             with open(cache_file, 'rb') as fid:
@@ -123,7 +129,8 @@ class sbd(imdb):
 
         boxes = np.zeros((len(unique_inst), 4), dtype=np.uint16)
         gt_classes = np.zeros(len(unique_inst), dtype=np.int32)
-        overlaps = np.zeros((len(unique_inst), self.num_classes), dtype=np.float32)
+        overlaps = np.zeros((len(unique_inst), self.num_classes),\
+            dtype=np.float32)
 
         for ind, inst_mask in enumerate(unique_inst):
             im_mask = (gt_inst_data == inst_mask)
@@ -152,14 +159,16 @@ class sbd(imdb):
         Load gt_masks information from SBD's additional data
         """
         image_name = self._image_index[index]
-        inst_file_name = os.path.join(self._data_path, 'inst', image_name + '.mat')
+        inst_file_name = os.path.join(self._data_path, 'inst',
+            image_name + '.mat')
         gt_inst_mat = scipy.io.loadmat(inst_file_name)
         gt_inst_data = gt_inst_mat['GTinst']['Segmentation'][0][0]
         unique_inst = np.unique(gt_inst_data)
         background_ind = np.where(unique_inst == 0)[0]
         unique_inst = np.delete(unique_inst, background_ind)
         gt_roidb = gt_roidbs[index]
-        cls_file_name = os.path.join(self._data_path,  'cls', image_name + '.mat')
+        cls_file_name = os.path.join(self._data_path, 'cls',
+            image_name + '.mat')
         gt_cls_mat = scipy.io.loadmat(cls_file_name)
         gt_cls_data = gt_cls_mat['GTcls']['Segmentation'][0][0]
         gt_masks = []
@@ -175,7 +184,8 @@ class sbd(imdb):
             mask = im_mask[box[1]: box[3]+1, box[0]:box[2]+1]
             gt_masks.append(mask)
 
-        # Also record the maximum dimension to create fixed dimension array when do forwarding
+        # Also record the maximum dimension to create fixed dimension array
+        # when do forwarding
         mask_max_x = max(gt_masks[i].shape[1] for i in xrange(len(gt_masks)))
         mask_max_y = max(gt_masks[i].shape[0] for i in xrange(len(gt_masks)))
         return {
@@ -235,7 +245,8 @@ class sbd(imdb):
                 cPickle.dump(all_masks[cls_inds], f, cPickle.HIGHEST_PROTOCOL)
 
     def _py_evaluate_segmentation(self, output_dir):
-        imageset_file = os.path.join(self._data_path ,self._image_set + '.txt')
+        imageset_file = os.path.join(self._data_path,
+            self._image_set + '.txt')
         cache_dir = os.path.join(self._devkit_path, 'annotations_cache')
         aps = []
         # define this as true according to SDS's evaluation protocol
@@ -250,10 +261,11 @@ class sbd(imdb):
             det_filename = os.path.join(output_dir, cls + '_det.pkl')
             seg_filename = os.path.join(output_dir, cls + '_seg.pkl')
             ap = voc_eval_sds(det_filename, seg_filename, self._data_path,
-                              imageset_file, cls, cache_dir, self._classes, ov_thresh=0.5)
+                              imageset_file, cls, cache_dir,
+                              self._classes, ov_thresh=0.5)
             aps += [ap]
-            print('AP for {} = {:.2f}'.format(cls, ap*100))
-        print('Mean AP@0.5 = {:.2f}'.format(np.mean(aps)*100))
+            print 'AP for {} = {:.2f}'.format(cls, ap*100)
+        print 'Mean AP@0.5 = {:.2f}'.format(np.mean(aps)*100)
         print '~~~~~~ Evaluation use min overlap = 0.7 ~~~~~~'
         aps = []
         for i, cls in enumerate(self._classes):
@@ -262,10 +274,11 @@ class sbd(imdb):
             det_filename = os.path.join(output_dir, cls + '_det.pkl')
             seg_filename = os.path.join(output_dir, cls + '_seg.pkl')
             ap = voc_eval_sds(det_filename, seg_filename, self._data_path,
-                              imageset_file, cls, cache_dir, self._classes, ov_thresh=0.7)
+                              imageset_file, cls, cache_dir,
+                              self._classes, ov_thresh=0.7)
             aps += [ap]
-            print('AP for {} = {:.2f}'.format(cls, ap*100))
-        print('Mean AP@0.7 = {:.2f}'.format(np.mean(aps)*100))
+            print 'AP for {} = {:.2f}'.format(cls, ap*100)
+        print 'Mean AP@0.7 = {:.2f}'.format(np.mean(aps)*100)
 
     def evaluate_segmentation(self, all_boxes, all_masks, output_dir):
         self._write_voc_seg_results_file(all_boxes, all_masks, output_dir)
