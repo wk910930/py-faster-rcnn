@@ -255,16 +255,18 @@ class sbd(imdb):
                 cPickle.dump(all_masks[cls_inds], f, cPickle.HIGHEST_PROTOCOL)
 
     def _do_python_eval(self, output_dir):
-        imageset_file = os.path.join(self._data_path,
-            self._image_set + '.txt')
+        imageset_file = os.path.join(
+            self._data_path, self._image_set + '.txt')
         cache_dir = os.path.join(self._devkit_path, 'annotations_cache')
-        aps = []
-        # define this as true according to SDS's evaluation protocol
+
+        # Define this as true according to SDS's evaluation protocol
         use_07_metric = True
         print 'VOC07 metric? ' + ('Yes' if use_07_metric else 'No')
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
+
         print '~~~~~~ Evaluation use min overlap = 0.5 ~~~~~~'
+        aps = []
         for i, cls in enumerate(self._classes):
             if cls == '__background__':
                 continue
@@ -276,6 +278,7 @@ class sbd(imdb):
             aps += [ap]
             print 'AP for {} = {:.2f}'.format(cls, ap*100)
         print 'Mean AP@0.5 = {:.2f}'.format(np.mean(aps)*100)
+
         print '~~~~~~ Evaluation use min overlap = 0.7 ~~~~~~'
         aps = []
         for i, cls in enumerate(self._classes):
@@ -289,6 +292,13 @@ class sbd(imdb):
             aps += [ap]
             print 'AP for {} = {:.2f}'.format(cls, ap*100)
         print 'Mean AP@0.7 = {:.2f}'.format(np.mean(aps)*100)
+
+        print('~~~~~~~~')
+        print('')
+        print('--------------------------------------------------------------')
+        print('Results computed with the **unofficial** Python eval code.')
+        print('-- Thanks, The Management')
+        print('--------------------------------------------------------------')
 
     def evaluate_segmentation(self, all_boxes, all_masks, output_dir):
         self._write_voc_seg_results_file(all_boxes, all_masks, output_dir)
