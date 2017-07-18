@@ -181,7 +181,7 @@ class sbd(imdb):
             unique_cls_inst = np.delete(unique_cls_inst, background_ind)
             assert len(unique_cls_inst) == 1
             assert unique_cls_inst[0] == gt_roidb['gt_classes'][ind]
-            mask = im_mask[box[1]: box[3]+1, box[0]:box[2]+1]
+            mask = im_mask[box[1]:box[3]+1, box[0]:box[2]+1]
             gt_masks.append(mask)
 
         # Also record the maximum dimension to create fixed dimension array
