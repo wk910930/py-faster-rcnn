@@ -136,7 +136,7 @@ def get_training_maskdb(imdb):
 
     return imdb.maskdb
 
-def filter_roidb(roidb):
+def filter(roidb, maskdb):
     """Remove roidb entries that have no usable RoIs."""
 
     def is_valid(entry):
@@ -154,17 +154,25 @@ def filter_roidb(roidb):
         return valid
 
     num = len(roidb)
-    filtered_roidb = [entry for entry in roidb if is_valid(entry)]
+    filtered_roidb = [];
+    filtered_maskdb = [];
+    for i in xrange(num):
+        if is_valid(roidb[i]):
+            filtered_roidb.append(roidb[i])
+            filtered_maskdb.append(maskdb[i])
+
+    assert len(filtered_roidb) == len(filtered_maskdb)
+
     num_after = len(filtered_roidb)
-    print 'Filtered {} roidb entries: {} -> {}'.format(num - num_after,
+    print 'Filtered {} roidb/maskdb entries: {} -> {}'.format(num - num_after,
                                                        num, num_after)
-    return filtered_roidb
+    return filtered_roidb, filtered_maskdb
 
 def train_net(solver_prototxt, roidb, maskdb, output_dir,
               pretrained_model=None, max_iters=40000):
     """Train a Fast R-CNN network."""
 
-    roidb = filter_roidb(roidb)
+    roidb, maskdb = filter(roidb, maskdb)
     sw = SolverWrapper(solver_prototxt, roidb, maskdb, output_dir,
                        pretrained_model=pretrained_model)
 
