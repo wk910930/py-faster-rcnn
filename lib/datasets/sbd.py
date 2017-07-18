@@ -244,7 +244,7 @@ class sbd(imdb):
             with open(filename, 'wr') as f:
                 cPickle.dump(all_masks[cls_inds], f, cPickle.HIGHEST_PROTOCOL)
 
-    def _py_evaluate_segmentation(self, output_dir):
+    def _do_python_eval(self, output_dir):
         imageset_file = os.path.join(self._data_path,
             self._image_set + '.txt')
         cache_dir = os.path.join(self._devkit_path, 'annotations_cache')
@@ -282,4 +282,4 @@ class sbd(imdb):
 
     def evaluate_segmentation(self, all_boxes, all_masks, output_dir):
         self._write_voc_seg_results_file(all_boxes, all_masks, output_dir)
-        self._py_evaluate_segmentation(output_dir)
+        self._do_python_eval(output_dir)
