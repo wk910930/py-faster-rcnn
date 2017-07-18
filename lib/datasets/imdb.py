@@ -82,6 +82,10 @@ class imdb(object):
 
     @property
     def maskdb(self):
+        # A maskdb is a list of dictionaries, each with the following keys:
+        #   gt_masks
+        #   mask_max
+        #   flipped
         if self._maskdb is not None:
             return self._maskdb
         else:
