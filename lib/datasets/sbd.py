@@ -82,8 +82,8 @@ class sbd(imdb):
             print '{} gt roidb loaded from {}'.format(self.name, cache_file)
             return roidb
 
-        gt_roidb = [self._load_sbd_annotations(index)
-                    for index in self._image_index]
+        gt_roidb = [self._load_pascal_annotation(index)
+                    for index in self.image_index]
         with open(cache_file, 'wb') as fid:
             cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
         print 'wrote gt roidb to {}'.format(cache_file)
@@ -101,21 +101,22 @@ class sbd(imdb):
             with open(cache_file, 'rb') as fid:
                 gt_maskdb = cPickle.load(fid)
             print '{} gt maskdb loaded from {}'.format(self.name, cache_file)
-        else:
-            num_image = len(self.image_index)
-            gt_roidbs = self.gt_roidb()
-            gt_maskdb = [self._load_sbd_mask_annotations(index, gt_roidbs)
-                         for index in xrange(num_image)]
-            with open(cache_file, 'wb') as fid:
-                cPickle.dump(gt_maskdb, fid, cPickle.HIGHEST_PROTOCOL)
-            print 'wrote gt roidb to {}'.format(cache_file)
+            return gt_maskdb
+
+        gt_roidb = self.gt_roidb()
+        gt_maskdb = [self._load_sbd_mask_annotations(index, gt_roidb)
+                     for index in self.image_index]
+        with open(cache_file, 'wb') as fid:
+            cPickle.dump(gt_maskdb, fid, cPickle.HIGHEST_PROTOCOL)
+        print 'wrote gt roidb to {}'.format(cache_file)
+
         return gt_maskdb
 
     def _load_sbd_annotations(self, index):
         """
-        Load image and bounding boxes info from XML file in the PASCAL VOC
-        format.
+        Load bounding-box info from MAT files in the SBD format.
         """
+
         inst_file_name = os.path.join(self._data_path, 'inst', index + '.mat')
         gt_inst_mat = scipy.io.loadmat(inst_file_name)
         gt_inst_data = gt_inst_mat['GTinst']['Segmentation'][0][0]
@@ -127,10 +128,10 @@ class sbd(imdb):
         gt_cls_mat = scipy.io.loadmat(cls_file_name)
         gt_cls_data = gt_cls_mat['GTcls']['Segmentation'][0][0]
 
-        boxes = np.zeros((len(unique_inst), 4), dtype=np.uint16)
-        gt_classes = np.zeros(len(unique_inst), dtype=np.int32)
-        overlaps = np.zeros((len(unique_inst), self.num_classes),\
-            dtype=np.float32)
+        num_objs = len(unique_inst)
+        boxes = np.zeros((num_objs, 4), dtype=np.uint16)
+        gt_classes = np.zeros(num_objs, dtype=np.int32)
+        overlaps = np.zeros((num_objs, self.num_classes), dtype=np.float32)
 
         for ind, inst_mask in enumerate(unique_inst):
             im_mask = (gt_inst_data == inst_mask)
@@ -154,23 +155,22 @@ class sbd(imdb):
                 'gt_overlaps': overlaps,
                 'flipped': False}
 
-    def _load_sbd_mask_annotations(self, index, gt_roidbs):
+    def _load_sbd_mask_annotations(self, index, gt_roidb):
         """
         Load gt_masks information from SBD's additional data
         """
-        image_name = self._image_index[index]
-        inst_file_name = os.path.join(self._data_path, 'inst',
-            image_name + '.mat')
+
+        inst_file_name = os.path.join(self._data_path, 'inst', index + '.mat')
         gt_inst_mat = scipy.io.loadmat(inst_file_name)
         gt_inst_data = gt_inst_mat['GTinst']['Segmentation'][0][0]
         unique_inst = np.unique(gt_inst_data)
         background_ind = np.where(unique_inst == 0)[0]
         unique_inst = np.delete(unique_inst, background_ind)
-        gt_roidb = gt_roidbs[index]
-        cls_file_name = os.path.join(self._data_path, 'cls',
-            image_name + '.mat')
+
+        cls_file_name = os.path.join(self._data_path, 'cls', index + '.mat')
         gt_cls_mat = scipy.io.loadmat(cls_file_name)
         gt_cls_data = gt_cls_mat['GTcls']['Segmentation'][0][0]
+
         gt_masks = []
         for ind, inst_mask in enumerate(unique_inst):
             box = gt_roidb['boxes'][ind]
@@ -188,11 +188,10 @@ class sbd(imdb):
         # when do forwarding
         mask_max_x = max(gt_masks[i].shape[1] for i in xrange(len(gt_masks)))
         mask_max_y = max(gt_masks[i].shape[0] for i in xrange(len(gt_masks)))
-        return {
-            'gt_masks': gt_masks,
-            'mask_max': [mask_max_x, mask_max_y],
-            'flipped': False
-        }
+
+        return {'gt_masks': gt_masks,
+                'mask_max': [mask_max_x, mask_max_y],
+                'flipped': False}
 
     def append_flipped_masks(self):
         num_images = self.num_images
