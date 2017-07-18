@@ -52,19 +52,19 @@ class imdb(object):
     def roidb_handler(self, val):
         self._roidb_handler = val
 
-    @property
-    def maskdb_handler(self):
-        return self._roidb_handler
-
-    @maskdb_handler.setter
-    def maskdb_handler(self, val):
-        self._roidb_handler = val
-
     def set_proposal_method(self, method):
         method = eval('self.' + method + '_roidb')
         self.roidb_handler = method
 
-    def set_mask_handler(self, method):
+    @property
+    def maskdb_handler(self):
+        return self._maskdb_handler
+
+    @maskdb_handler.setter
+    def maskdb_handler(self, val):
+        self._maskdb_handler = val
+
+    def set_mask_method(self, method):
         method = eval('self.' + method + '_maskdb')
         self.maskdb_handler = method
 

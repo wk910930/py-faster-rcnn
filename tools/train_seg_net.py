@@ -80,8 +80,9 @@ def attach_maskdb(imdb_names):
         imdb = get_imdb(imdb_name)
         print 'Loaded dataset `{:s}` for training'.format(imdb.name)
         imdb.set_proposal_method(cfg.TRAIN.PROPOSAL_METHOD)
-        imdb.set_mask_handler(cfg.TRAIN.PROPOSAL_METHOD)
         print 'Set proposal method: {:s}'.format(cfg.TRAIN.PROPOSAL_METHOD)
+        imdb.set_mask_method(cfg.TRAIN.PROPOSAL_METHOD)
+        print 'Set mask method: {:s}'.format(cfg.TRAIN.PROPOSAL_METHOD)
         maskdb = get_training_maskdb(imdb)
         return maskdb
 
