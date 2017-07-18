@@ -209,19 +209,19 @@ class sbd(imdb):
         self._image_index = self._image_index * 2
 
     def _reformat_result(self, boxes, masks):
-        num_images = len(self.image_index)
-        num_class = len(self.classes)
+        num_images = self.num_images
+        num_classes = self.num_classes
         reformat_masks = [[[] for _ in xrange(num_images)]
-                          for _ in xrange(num_class)]
-        for cls_inds in xrange(1, num_class):
+                          for _ in xrange(num_classes)]
+        for cls_inds in xrange(1, num_classes):
             for img_inds in xrange(num_images):
                 if len(masks[cls_inds][img_inds]) == 0:
                     continue
                 num_inst = masks[cls_inds][img_inds].shape[0]
-                reformat_masks[cls_inds][img_inds] = masks[cls_inds][img_inds]\
-                    .reshape(num_inst, cfg.MASK_SIZE, cfg.MASK_SIZE)
                 reformat_masks[cls_inds][img_inds] = \
-                      reformat_masks[cls_inds][img_inds] >= cfg.BINARIZE_THRESH
+                    masks[cls_inds][img_inds].reshape(num_inst, cfg.MASK_SIZE, cfg.MASK_SIZE)
+                reformat_masks[cls_inds][img_inds] = \
+                    reformat_masks[cls_inds][img_inds] >= cfg.BINARIZE_THRESH
         all_masks = reformat_masks
         return boxes, all_masks
 
