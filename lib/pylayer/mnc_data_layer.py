@@ -13,6 +13,15 @@ import caffe
 from fast_rcnn.config import cfg
 from utils.blob import prep_im_for_blob, im_list_to_blob
 
+# Pascal VOC
+classes = ('__background__', # always index 0
+             'aeroplane', 'bicycle', 'bird', 'boat',
+             'bottle', 'bus', 'car', 'cat', 'chair',
+             'cow', 'diningtable', 'dog', 'horse',
+             'motorbike', 'person', 'pottedplant',
+             'sheep', 'sofa', 'train', 'tvmonitor')
+num_classes = len(classes)
+ind_to_class = dict(zip(xrange(num_classes), classes))
 
 class MNCDataLayer(caffe.Layer):
     """
@@ -128,6 +137,8 @@ class MNCDataLayer(caffe.Layer):
             'gt_boxes': gt_boxes,
             'im_info': np.array([[im_blob.shape[2], im_blob.shape[3], im_scales[0]]], dtype=np.float32)
         }
+        # For debug visualizations
+        # _vis_minibatch(im_blob, gt_boxes)
 
         maskdb = self._maskdb[db_inds]
         mask_list = maskdb['gt_masks']
@@ -146,3 +157,22 @@ class MNCDataLayer(caffe.Layer):
         blobs['mask_info'] = mask_info
 
         return blobs
+
+def _vis_minibatch(im_blob, gt_boxes):
+    """Visualize a mini-batch for debugging."""
+    import matplotlib.pyplot as plt
+    for i in xrange(gt_boxes.shape[0]):
+        roi = gt_boxes[i, :]
+        im = im_blob[0, :, :, :].transpose((1, 2, 0)).copy()
+        im += cfg.PIXEL_MEANS
+        im = im[:, :, (2, 1, 0)]
+        im = im.astype(np.uint8)
+        cls_id = int(roi[4])
+        print 'class = {}'.format(ind_to_class[cls_id])
+        plt.imshow(im)
+        plt.gca().add_patch(
+            plt.Rectangle((roi[0], roi[1]), roi[2] - roi[0],
+                          roi[3] - roi[1], fill=False,
+                          edgecolor='r', linewidth=3)
+            )
+        plt.show()
