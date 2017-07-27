@@ -174,13 +174,18 @@ class sbd(imdb):
         gt_masks = []
         for ind, inst_mask in enumerate(unique_inst):
             box = gt_roidb['boxes'][ind]
+            cls_ind = gt_roidb['gt_classes'][ind]
+
             im_mask = (gt_inst_data == inst_mask)
             im_cls_mask = np.multiply(gt_cls_data, im_mask)
+
             unique_cls_inst = np.unique(im_cls_mask)
             background_ind = np.where(unique_cls_inst == 0)[0]
             unique_cls_inst = np.delete(unique_cls_inst, background_ind)
+
             assert len(unique_cls_inst) == 1
-            assert unique_cls_inst[0] == gt_roidb['gt_classes'][ind]
+            assert unique_cls_inst[0] == cls_ind
+
             mask = im_mask[box[1]:box[3]+1, box[0]:box[2]+1]
             gt_masks.append(mask)
 
