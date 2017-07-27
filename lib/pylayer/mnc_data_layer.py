@@ -120,10 +120,12 @@ class MNCDataLayer(caffe.Layer):
         """
         assert cfg.TRAIN.IMS_PER_BATCH == 1, 'Only single batch forwarding is supported'
 
+        # Return the roidb indices for the next minibatch.
         if self._cur + cfg.TRAIN.IMS_PER_BATCH >= len(self._roidb):
             self._shuffle_roidb_inds()
         db_inds = self._perm[self._cur]
         self._cur += 1
+
         roidb = self._roidb[db_inds]
         
         random_scale_inds = np.random.randint(0, high=len(cfg.TRAIN.SCALES), size=1)
