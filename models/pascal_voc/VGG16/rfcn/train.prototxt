@@ -571,7 +571,7 @@ layer {
   bottom: "rois"
   top: "cls_vote"
   psroi_pooling_param {
-    spatial_scale: 0.0625
+    spatial_scale: 0.125  # 1 / 8
     output_dim: 21  # 21 classes
     group_size: 7
   }
@@ -621,7 +621,7 @@ layer {
   bottom: "rois"
   top: "bbox_vote"
   psroi_pooling_param {
-    spatial_scale: 0.0625
+    spatial_scale: 0.125  # 1 / 8
     output_dim: 84  # 21 * 4
     group_size: 7
   }
