@@ -171,10 +171,17 @@ def im_detect(net, im, boxes=None):
     else:
         # use softmax estimated probabilities
         scores = blobs_out['cls_prob'].copy()
+        # Note: In some framework, e.g., R-FCN, the cls_prob and bbox_pred are
+        # in the shape of [n,c,1,1], which is different from original fast rcnn [n,c].
+        # So we need to squeeze cls_prob and bbox_pred
+        if scores.ndim == 4:
+            scores = np.squeeze(scores, axis=(2,3))
 
     if cfg.TEST.BBOX_REG:
         # Apply bounding-box regression deltas
         box_deltas = blobs_out['bbox_pred'].copy()
+        if box_deltas.ndim == 4:
+            box_deltas = np.squeeze(box_deltas, axis=(2,3))
         pred_boxes = bbox_transform_inv(boxes, box_deltas)
         pred_boxes = clip_boxes(pred_boxes, im.shape)
     else:
@@ -196,7 +203,11 @@ def im_detect(net, im, boxes=None):
         flip_blobs_out = net.forward()
 
         flip_scores = flip_blobs_out['cls_prob']
+        if flip_scores.ndim == 4:
+            flip_scores = np.squeeze(flip_scores, axis=(2,3))
         flip_box_deltas = flip_blobs_out['bbox_pred']
+        if flip_box_deltas.ndim == 4:
+            flip_box_deltas = np.squeeze(flip_box_deltas, axis=(2,3))
         flip_box_deltas[:, 0::4] = -flip_box_deltas[:, 0::4]
 
         scores = (scores + flip_scores) / 2
