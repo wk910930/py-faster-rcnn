@@ -148,6 +148,7 @@ class MNCDataLayer(caffe.Layer):
         # _vis_minibatch(im_blob, gt_boxes)
 
         maskdb = self._maskdb[db_inds]
+
         mask_list = maskdb['gt_masks']
         mask_max_x = maskdb['mask_max'][0]
         mask_max_y = maskdb['mask_max'][1]
@@ -162,6 +163,9 @@ class MNCDataLayer(caffe.Layer):
             mask_info[j, 1] = mask_x
         blobs['gt_masks'] = gt_masks
         blobs['mask_info'] = mask_info
+
+        assert gt_boxes.shape[0] == len(mask_list), \
+            "num of gt bbox and num of gt mask doesn't match"
 
         return blobs
 
