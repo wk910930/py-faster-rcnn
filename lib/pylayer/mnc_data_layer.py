@@ -29,22 +29,28 @@ class MNCDataLayer(caffe.Layer):
     """
 
     def setup(self, bottom, top):
+        assert(cfg.TRAIN.HAS_RPN, 'Use RPN for this project')
+        assert cfg.TRAIN.IMS_PER_BATCH == 1, 'Only single batch forwarding is supported'
+
         layer_params = yaml.load(self.param_str_)
         self._num_classes = layer_params['num_classes']
         self._name_to_top_map = {}
         # data blob: holds a batch of N images, each with 3 channels
         top[0].reshape(cfg.TRAIN.IMS_PER_BATCH, 3, max(cfg.TRAIN.SCALES), cfg.TRAIN.MAX_SIZE)
         self._name_to_top_map['data'] = 0
-        assert(cfg.TRAIN.HAS_RPN, 'Use RPN for this project')
-        # Just pseudo setup
+        # top[1]: im_info
         top[1].reshape(1, 3)
         self._name_to_top_map['im_info'] = 1
+        # top[2]: gt_boxes
         top[2].reshape(1, 4)
         self._name_to_top_map['gt_boxes'] = 2
+        # top[3]: gt_masks
         top[3].reshape(1, 21, 21)
         self._name_to_top_map['gt_masks'] = 3
+        # top[4]: mask_info
         top[4].reshape(1, 3)
         self._name_to_top_map['mask_info'] = 4
+
         assert len(top) == len(self._name_to_top_map)
 
     def reshape(self, bottom, top):
@@ -118,7 +124,6 @@ class MNCDataLayer(caffe.Layer):
         """
         Return the blobs to be used for the next minibatch.
         """
-        assert cfg.TRAIN.IMS_PER_BATCH == 1, 'Only single batch forwarding is supported'
 
         # Return the roidb indices for the next minibatch.
         if self._cur + cfg.TRAIN.IMS_PER_BATCH >= len(self._roidb):
