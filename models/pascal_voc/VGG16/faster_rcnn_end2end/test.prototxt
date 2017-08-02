@@ -1,19 +1,22 @@
 name: "VGG_ILSVRC_16_layers"
-
-input: "data"
-input_shape {
-  dim: 1
-  dim: 3
-  dim: 224
-  dim: 224
+layer {
+  name: "input"
+  type: "Input"
+  top: "data"
+  top: "im_info"
+  input_param {
+    shape {
+      dim: 1
+      dim: 3
+      dim: 224
+      dim: 224
+    }
+    shape {
+      dim: 1
+      dim: 3
+    }
+  }
 }
-
-input: "im_info"
-input_shape {
-  dim: 1
-  dim: 3
-}
-
 layer {
   name: "conv1_1"
   type: "Convolution"
@@ -383,21 +386,32 @@ layer {
   bottom: "conv5_3"
   top: "conv5_3"
 }
-
-#========= RPN ============
-
 layer {
   name: "rpn_conv/3x3"
   type: "Convolution"
   bottom: "conv5_3"
   top: "rpn/output"
-  param { lr_mult: 1.0 decay_mult: 1.0 }
-  param { lr_mult: 2.0 decay_mult: 0 }
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 512
-    kernel_size: 3 pad: 1 stride: 1
-    weight_filler { type: "gaussian" std: 0.01 }
-    bias_filler { type: "constant" value: 0 }
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
   }
 }
 layer {
@@ -406,19 +420,32 @@ layer {
   bottom: "rpn/output"
   top: "rpn/output"
 }
-
 layer {
   name: "rpn_cls_score"
   type: "Convolution"
   bottom: "rpn/output"
   top: "rpn_cls_score"
-  param { lr_mult: 1.0 decay_mult: 1.0 }
-  param { lr_mult: 2.0 decay_mult: 0 }
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
-    num_output: 18   # 2(bg/fg) * 9(anchors)
-    kernel_size: 1 pad: 0 stride: 1
-    weight_filler { type: "gaussian" std: 0.01 }
-    bias_filler { type: "constant" value: 0 }
+    num_output: 18
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
   }
 }
 layer {
@@ -426,25 +453,43 @@ layer {
   type: "Convolution"
   bottom: "rpn/output"
   top: "rpn_bbox_pred"
-  param { lr_mult: 1.0 decay_mult: 1.0 }
-  param { lr_mult: 2.0 decay_mult: 0 }
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
-    num_output: 36   # 4 * 9(anchors)
-    kernel_size: 1 pad: 0 stride: 1
-    weight_filler { type: "gaussian" std: 0.01 }
-    bias_filler { type: "constant" value: 0 }
+    num_output: 36
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
   }
 }
 layer {
-   bottom: "rpn_cls_score"
-   top: "rpn_cls_score_reshape"
-   name: "rpn_cls_score_reshape"
-   type: "Reshape"
-   reshape_param { shape { dim: 0 dim: 2 dim: -1 dim: 0 } }
+  name: "rpn_cls_score_reshape"
+  type: "Reshape"
+  bottom: "rpn_cls_score"
+  top: "rpn_cls_score_reshape"
+  reshape_param {
+    shape {
+      dim: 0
+      dim: 2
+      dim: -1
+      dim: 0
+    }
+  }
 }
-
-#========= RoI Proposal ============
-
 layer {
   name: "rpn_cls_prob"
   type: "Softmax"
@@ -452,28 +497,32 @@ layer {
   top: "rpn_cls_prob"
 }
 layer {
-  name: 'rpn_cls_prob_reshape'
-  type: 'Reshape'
-  bottom: 'rpn_cls_prob'
-  top: 'rpn_cls_prob_reshape'
-  reshape_param { shape { dim: 0 dim: 18 dim: -1 dim: 0 } }
-}
-layer {
-  name: 'proposal'
-  type: 'Python'
-  bottom: 'rpn_cls_prob_reshape'
-  bottom: 'rpn_bbox_pred'
-  bottom: 'im_info'
-  top: 'rois'
-  python_param {
-    module: 'rpn.proposal_layer'
-    layer: 'ProposalLayer'
-    param_str: "'feat_stride': 16"
+  name: "rpn_cls_prob_reshape"
+  type: "Reshape"
+  bottom: "rpn_cls_prob"
+  top: "rpn_cls_prob_reshape"
+  reshape_param {
+    shape {
+      dim: 0
+      dim: 18
+      dim: -1
+      dim: 0
+    }
   }
 }
-
-#========= RCNN ============
-
+layer {
+  name: "proposal"
+  type: "Python"
+  bottom: "rpn_cls_prob_reshape"
+  bottom: "rpn_bbox_pred"
+  bottom: "im_info"
+  top: "rois"
+  python_param {
+    module: "rpn.proposal_layer"
+    layer: "ProposalLayer"
+    param_str: "\'feat_stride\': 16"
+  }
+}
 layer {
   name: "roi_pool5"
   type: "ROIPooling"
@@ -481,9 +530,9 @@ layer {
   bottom: "rois"
   top: "pool5"
   roi_pooling_param {
-    pooled_w: 7
     pooled_h: 7
-    spatial_scale: 0.0625 # 1/16
+    pooled_w: 7
+    spatial_scale: 0.0625
   }
 }
 layer {
