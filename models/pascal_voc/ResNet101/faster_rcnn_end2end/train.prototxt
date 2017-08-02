@@ -3558,6 +3558,8 @@ layer {
   type: "ROIPooling"
   bottom: "caffe.Eltwise_234"
   bottom: "rois"
+  propagate_down: true
+  propagate_down: false
   top: "roi_pool"
   roi_pooling_param {
     pooled_h: 14
