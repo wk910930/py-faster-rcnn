@@ -120,7 +120,7 @@ if __name__ == '__main__':
         background = background.convert('RGBA')
         mask = mask.convert('RGBA')
         superimpose_image = Image.blend(background, mask, 0.8)
-        superimpose_name = os.path.join(demo_dir, 'final_' + im_name)
+        superimpose_name = os.path.join(demo_dir, im_name + '_final.png')
         superimpose_image.save(superimpose_name, 'PNG')
         im = cv2.imread(superimpose_name)
 
