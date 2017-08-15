@@ -13,16 +13,6 @@ import cv2
 from fast_rcnn.config import cfg
 from utils.blob import prep_im_for_blob, im_list_to_blob
 
-# Pascal VOC
-classes = ('__background__', # always index 0
-             'aeroplane', 'bicycle', 'bird', 'boat',
-             'bottle', 'bus', 'car', 'cat', 'chair',
-             'cow', 'diningtable', 'dog', 'horse',
-             'motorbike', 'person', 'pottedplant',
-             'sheep', 'sofa', 'train', 'tvmonitor')
-num_classes = len(classes)
-ind_to_class = dict(zip(xrange(num_classes), classes))
-
 def get_minibatch(roidb, num_classes):
     """Given a roidb, construct a minibatch sampled from it."""
     num_images = len(roidb)
@@ -222,7 +212,7 @@ def _vis_minibatch(im_blob, gt_boxes):
         im = im[:, :, (2, 1, 0)]
         im = im.astype(np.uint8)
         cls_id = int(roi[4])
-        print 'class = {}'.format(ind_to_class[cls_id])
+        print 'class_id = {}'.format(cls_id)
         plt.imshow(im)
         plt.gca().add_patch(
             plt.Rectangle((roi[0], roi[1]), roi[2] - roi[0],
