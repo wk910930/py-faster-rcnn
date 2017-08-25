@@ -32,7 +32,10 @@ class ProposalTargetLayer(caffe.Layer):
         # sampled rois (0, x1, y1, x2, y2)
         top[0].reshape(1, 5)
         # labels
-        top[1].reshape(1, 1)
+        if not cfg.TRAIN.USE_BINARY_CLASSIFIER:
+            top[1].reshape(1, 1)
+        else:
+            top[1].reshape(1, self._num_classes)
         # bbox_targets
         top[2].reshape(1, self._num_classes * 4)
         # bbox_inside_weights
@@ -84,6 +87,8 @@ class ProposalTargetLayer(caffe.Layer):
         top[0].data[...] = rois
 
         # classification labels
+        if cfg.TRAIN.USE_BINARY_CLASSIFIER:
+            labels = _one_hot_vec(labels, self._num_classes)
         top[1].reshape(*labels.shape)
         top[1].data[...] = labels
 
@@ -148,6 +153,12 @@ def _compute_targets(ex_rois, gt_rois, labels):
                 / np.array(cfg.TRAIN.BBOX_NORMALIZE_STDS))
     return np.hstack(
             (labels[:, np.newaxis], targets)).astype(np.float32, copy=False)
+
+def _one_hot_vec(labels, num_classes):
+    """Convert labels to one-hot form"""
+    one_hot_vec = np.zeros((labels.shape[0], num_classes), dtype=labels.dtype)
+    one_hot_vec[np.arange(len(one_hot_vec)), np.squeeze(labels.astype(int))] = 1
+    return one_hot_vec
 
 def _sample_rois(all_rois, gt_boxes, fg_rois_per_image, rois_per_image, num_classes):
     """Generate a random sample of RoIs comprising foreground and background

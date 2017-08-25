@@ -104,6 +104,10 @@ __C.TRAIN.PROPOSAL_METHOD = 'selective_search'
 # on zero-padding.
 __C.TRAIN.ASPECT_GROUPING = True
 
+# If True, we assume you are using Sigmoid layer instead of Softmax layer
+# for non-competition among categories during training.
+__C.TRAIN.USE_BINARY_CLASSIFIER = False
+
 # Use RPN to detect objects
 __C.TRAIN.HAS_RPN = False
 # IOU >= thresh: positive example

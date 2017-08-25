@@ -25,6 +25,8 @@ TRAIN:
   RPN_NEGATIVE_OVERLAP: 0.3
   RPN_FG_FRACTION: 0.5
   RPN_BATCHSIZE: 256
+  # N of binary classifers
+  USE_BINARY_CLASSIFIER: True
 
 TEST:
   ### Fast R-CNN Module ###
