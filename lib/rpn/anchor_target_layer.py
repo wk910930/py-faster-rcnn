@@ -155,8 +155,13 @@ class AnchorTargetLayer(caffe.Layer):
             # assign bg labels last so that negative labels can clobber positives
             labels[max_overlaps < cfg.TRAIN.RPN_NEGATIVE_OVERLAP] = 0
 
+        if cfg.TRAIN.RPN_FULL_ANCHORS:
+            batchsize = total_anchors
+        else:
+            batchsize = cfg.TRAIN.RPN_BATCHSIZE
+
         # subsample positive labels if we have too many
-        num_fg = int(cfg.TRAIN.RPN_FG_FRACTION * cfg.TRAIN.RPN_BATCHSIZE)
+        num_fg = int(cfg.TRAIN.RPN_FG_FRACTION * batchsize)
         fg_inds = np.where(labels == 1)[0]
         if len(fg_inds) > num_fg:
             disable_inds = npr.choice(
@@ -164,7 +169,7 @@ class AnchorTargetLayer(caffe.Layer):
             labels[disable_inds] = -1
 
         # subsample negative labels if we have too many
-        num_bg = cfg.TRAIN.RPN_BATCHSIZE - np.sum(labels == 1)
+        num_bg = batchsize - np.sum(labels == 1)
         bg_inds = np.where(labels == 0)[0]
         if len(bg_inds) > num_bg:
             disable_inds = npr.choice(
