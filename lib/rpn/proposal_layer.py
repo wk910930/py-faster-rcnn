@@ -72,6 +72,9 @@ class ProposalLayer(caffe.Layer):
 
         # the first set of _num_anchors channels are bg probs
         # the second set are the fg probs, which we want
+        # TODO(kun): The above statement is only true when we are using
+        # softmax. When using logistic regression (i.e. sigmoid), we may
+        # do not have bg probs, since bg probs is not necessary in this case.
         scores = bottom[0].data[:, self._num_anchors:, :, :]
         bbox_deltas = bottom[1].data
         im_info = bottom[2].data[0, :]
