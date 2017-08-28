@@ -1,39 +1,34 @@
 EXP_DIR: faster_rcnn_binary
+
 TRAIN:
-  ### Fast R-CNN Module ###
+  HAS_RPN: True
   SCALES: !!python/tuple [600,]
   MAX_SIZE: 1000
   IMS_PER_BATCH: 1
   PROPOSAL_METHOD: gt
-  # Randomly select #BATCH_SIZE RoIs from
-  # total #RPN_POST_NMS_TOP_N survived from proposal_layer.py
-  BATCH_SIZE: 128
-  FG_FRACTION: 0.25
-  FG_THRESH: 0.5
-  BG_THRESH_HI: 0.5
-  BG_THRESH_LO: 0.0
-  # bbox transform
   BBOX_THRESH: 0.5
   BBOX_NORMALIZE_TARGETS_PRECOMPUTED: True
+  # anchor_target_layer.py
+  RPN_BATCHSIZE: 256  # only up to RPN_BATCHSIZE anchors from total anchors will work
+  RPN_FG_FRACTION: 0.5
+  RPN_POSITIVE_OVERLAP: 0.7
+  RPN_NEGATIVE_OVERLAP: 0.3
   # proposal_layer.py
   RPN_NMS_THRESH: 0.7
   RPN_PRE_NMS_TOP_N: 12000
   RPN_POST_NMS_TOP_N: 2000
-  ### RPN Module ###
-  HAS_RPN: True
-  RPN_POSITIVE_OVERLAP: 0.7
-  RPN_NEGATIVE_OVERLAP: 0.3
-  RPN_FG_FRACTION: 0.5
-  RPN_BATCHSIZE: 256
-  # N of binary classifers
-  USE_BINARY_CLASSIFIER: True
+  # proposal_target_layer.py
+  BATCH_SIZE: 128  # randomly select BATCH_SIZE rois from RPN_POST_NMS_TOP_N rois
+  FG_FRACTION: 0.25
+  FG_THRESH: 0.5
+  BG_THRESH_HI: 0.5
+  BG_THRESH_LO: 0.0
+  USE_BINARY_CLASSIFIER: True  # convert labels to one-hot-vector
 
 TEST:
-  ### Fast R-CNN Module ###
+  HAS_RPN: True
   SCALES: !!python/tuple [600,]
   MAX_SIZE: 1000
-  ### RPN Module ###
-  HAS_RPN: True
   # proposal_layer.py
   RPN_NMS_THRESH: 0.7
   RPN_PRE_NMS_TOP_N: 6000
