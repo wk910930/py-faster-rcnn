@@ -370,8 +370,7 @@ class coco(imdb):
         for cls_ind, cls in enumerate(self.classes):
             if cls == '__background__':
                 continue
-            print 'Collecting {} results ({:d}/{:d})'.format(cls, cls_ind,
-                                                          self.num_classes - 1)
+            print 'Collecting {} results ({:d}/{:d})'.format(cls, cls_ind, self.num_classes - 1)
             coco_cat_id = self._class_to_coco_cat_id[cls]
             results.extend(self._coco_results_one_category(all_boxes[cls_ind],
                                                            coco_cat_id))
