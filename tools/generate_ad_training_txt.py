@@ -65,8 +65,17 @@ def main():
             f.write('{}\n'.format(image['image']))
             f.write('{} {} {} {}\n'.format(image['channel'], image['height'], image['width'], 1))
             f.write('{}\n'.format(0))
-            f.write('{}\n'.format(num_gts))
+
+            crowd_objes_list = []
             for k in valid_gt_box_idx_list:
+                # class_index
+                if image['gt_overlaps'][k, valid_label] == -1:
+                    crowd_objes_list.append(k)
+
+            f.write('{}\n'.format(num_gts - len(crowd_objes_list)))
+            for k in valid_gt_box_idx_list:
+                if k in crowd_objes_list:
+                    continue
                 # class_index
                 class_index = image['gt_classes'][k]
                 f.write('{} '.format(class_index))
