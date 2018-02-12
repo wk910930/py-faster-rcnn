@@ -59,6 +59,9 @@ def main():
             if num_gts == 0:
                 continue
 
+            if image['height'] < 256 or image['width'] < 256:
+                continue
+
             valid_img_idx += 1
             # Write to disk
             f.write('# {}\n'.format(valid_img_idx))
@@ -78,7 +81,7 @@ def main():
                     continue
                 # class_index
                 class_index = image['gt_classes'][k]
-                f.write('{} '.format(class_index))
+                f.write('{} '.format(3))
                 # x1 y1 x2 y2
                 x1 = image['boxes'][k, 0]
                 y1 = image['boxes'][k, 1]
