@@ -27,10 +27,10 @@ def prepare_gt_roidb(imdb, gt_roidb):
         gt_roidb[i]['channel'] = len(bands[i])
 
 def main():
-    # Configuration
     image_set = 'train'
     year = '2014'
-    valid_label = 1
+    label_map_dict = {3:1, 6:1, 8:1, 2:2, 4:2, 1:3}
+    image_min_size = 256
     output = 'coco_{}_{}.txt'.format(year, image_set)
 
     # Load images and gt
@@ -38,28 +38,24 @@ def main():
     gt_roidb = imdb.gt_roidb()
     prepare_gt_roidb(imdb, gt_roidb)
 
-    # Filter gt_roidb
-    print 'Filtering out images with no gt boxes...'
-    remove_indices = []
-    for i in xrange(len(gt_roidb)):
-        if gt_roidb[i]['boxes'].shape[0] == 0:
-            remove_indices.append(i)
-    gt_roidb = [i for j, i in enumerate(gt_roidb) if j not in remove_indices]
-    print '{} images are filtered'.format(len(remove_indices))
-
     valid_img_idx = 0
     with open(output, 'w') as f:
         for image_index in xrange(len(gt_roidb)):
             image = gt_roidb[image_index]
-            assert image['boxes'].shape[0] == image['gt_classes'].shape[0]
 
-            valid_gt_box_idx_list = np.where(image['gt_classes'] == valid_label)[0]
-            num_gts = len(valid_gt_box_idx_list)
-            # Skip images without valid_label
-            if num_gts == 0:
+            if image['height'] < image_min_size or image['width'] < image_min_size:
                 continue
 
-            if image['height'] < 256 or image['width'] < 256:
+            assert image['boxes'].shape[0] == image['gt_classes'].shape[0]
+
+            gt_idx_list = []
+            for key in label_map_dict:
+                gt_idx_list += np.where(image['gt_classes'] == key)[0].tolist()
+            for k in gt_idx_list:
+                if image['gt_overlaps'][k, key] == -1:
+                    gt_idx_list.remove(k)
+            num_gts = len(gt_idx_list)
+            if num_gts == 0:
                 continue
 
             valid_img_idx += 1
@@ -69,19 +65,11 @@ def main():
             f.write('{} {} {} {}\n'.format(image['channel'], image['height'], image['width'], 1))
             f.write('{}\n'.format(0))
 
-            crowd_objes_list = []
-            for k in valid_gt_box_idx_list:
+            f.write('{}\n'.format(num_gts))
+            for k in gt_idx_list:
                 # class_index
-                if image['gt_overlaps'][k, valid_label] == -1:
-                    crowd_objes_list.append(k)
-
-            f.write('{}\n'.format(num_gts - len(crowd_objes_list)))
-            for k in valid_gt_box_idx_list:
-                if k in crowd_objes_list:
-                    continue
-                # class_index
-                class_index = image['gt_classes'][k]
-                f.write('{} '.format(3))
+                class_index = label_map_dict[image['gt_classes'][k]]
+                f.write('{} '.format(class_index))
                 # x1 y1 x2 y2
                 x1 = image['boxes'][k, 0]
                 y1 = image['boxes'][k, 1]
